@@ -72,7 +72,16 @@ void breathingLight() {
 
 // Rainbow Wave
 void rainbowWave() {
-    
+    unsigned long startTime = millis();
+    while (millis() - startTime < 3 * 1000) {
+      for (int i = 0; i < 256; i++) {
+        for (int j = 0; j < NUM_LEDS; j++) {
+          strip.setPixelColor(j, strip.ColorHSV((i * 65536 / 256) + (j * 65536 / NUM_LEDS), 255, 255));
+        }
+        strip.show();
+        delay(3 * 1000 / 256);
+      }
+    }
 }
 
 // Strobo Effect
