@@ -1,5 +1,4 @@
-from ipScanner import IPScanner
+from GUI.window import Window
 
-ips = IPScanner()
-
-print(ips.get_devices())
+window = Window("LED-Controller", 800, 600, 1100, 900)
+window.mainloop()
