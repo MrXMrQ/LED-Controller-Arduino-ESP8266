@@ -3,168 +3,233 @@
 #include <ESP8266WiFi.h>
 #include <Adafruit_NeoPixel.h>
 
-const char* ssid = ""; // Enter your SSID
-const char* password = ""; // Enter your WiFi password
+/**
+ * @file LedStripControl.ino
+ * @brief ESP8266-based LED strip controller with animations and web server control.
+ *
+ * This program connects to a Wi-Fi network and provides a web server to control an LED strip.
+ * Users can turn LEDs on/off, adjust brightness, and trigger animations like running lights,
+ * breathing light, and rainbow wave.
+ */
 
-ESP8266WebServer server(80); // Create an instance of the web server on port 80
+// WiFi Credentials
+const char* ssid = "";  // Wi-Fi SSID
+const char* password = "";  // Wi-Fi Password
 
-#define LED_PIN 2
-#define NUM_LEDS 60 // Enter numbers of LED's on the strip
+ESP8266WebServer server(80);  // Web server on port 80
+
+// LED Strip Configuration
+#define LED_PIN 2  // Pin connected to LED strip
+#define NUM_LEDS 60  // Number of LEDs in the strip
 
 Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
+// Animation Control Variables
 bool animationRunning = false;
 int currentAnimation = -1;
+uint32_t lastUpdate = 0;
 
-uint8_t r = 255;
-uint8_t g = 0;
-uint8_t b = 0;
-uint8_t r1 = 255;
-uint8_t g1 = 0;
-uint8_t b1 = 0;
-int delayTime = 10;
-int brightness = 0;
+// LED Parameters
+uint8_t r = 255, g = 0, b = 0, r1 = 255, g1 = 0, b1 = 0;
+int brightness = 50;
+unsigned long delayTime = 10;
 
-// On & Off
-void ledOn() {
-    Serial.println("LED ON request received.");
-    strip.setBrightness(brightness);
-
-    for (int i = 0; i < NUM_LEDS; i++) {
-        strip.setPixelColor(i, strip.Color(r, g, b));
-    }
-
-    strip.show();
-    server.send(200, "text/plain", "LED's on");
-}
-
-void ledOff() {
-    Serial.println("LED OFF request received.");
-    strip.clear();
-    strip.show();
-    server.send(200, "text/plain", "LED's off");
-}
-
-// Animations
-void runningLights() {
-    for (int i = 0; i < NUM_LEDS; i++) {
-        strip.clear();
-        strip.setPixelColor(i, strip.Color(r, g, b));
-        strip.show();
-        delay(delayTime);
-    }
-}
-
-// Breathing Light
-void breathingLight() {
-    for (int i = 0; i < brightness; i++) {
-        strip.fill(strip.Color(r * i / brightness, g * i / brightness, b * i / brightness), 0, NUM_LEDS);
-        strip.show();
-        delay(delayTime);
-    }
-    
-    for (int i = brightness; i >= 0; i--) {
-        strip.fill(strip.Color(r * i / brightness, g * i / brightness, b * i / brightness), 0, NUM_LEDS);
-        strip.show();
-        delay(delayTime);
-    }
-}
-
-// Rainbow Wave
-void rainbowWave() {
-    unsigned long startTime = millis();
-    while (millis() - startTime < 3 * 1000) {
-      for (int i = 0; i < 256; i++) {
-        for (int j = 0; j < NUM_LEDS; j++) {
-          strip.setPixelColor(j, strip.ColorHSV((i * 65536 / 256) + (j * 65536 / NUM_LEDS), 255, 255));
-        }
-        strip.show();
-        delay(3 * 1000 / 256);
-      }
-    }
-}
-
-// Strobo Effect
-void stroboEffect() {
-    for (int i = 0; i < NUM_LEDS; i++) {
-        strip.setPixelColor(i, strip.Color(r, g, b));
-    }
-    strip.show();
-    delay(delayTime);
-    strip.clear();
-    strip.show();
-    delay(delayTime);
-}
-
-// Gradient Effect
-void gradientEffect() {
-    for (int i = 0; i < NUM_LEDS; i++) {
-        int red = map(i, 0, NUM_LEDS, r, r1);
-        int green = map(i, 0, NUM_LEDS, g, g1);
-        int blue = map(i, 0, NUM_LEDS, b, b1);
-        strip.setPixelColor(i, strip.Color(red, green, blue));
-    }
-    strip.show();
-    delay(100);
-}
-
-// Firefly Effect
-void fireflyEffect() {
-    for (int i = 0; i < NUM_LEDS; i++) {
-        if (random(0, 100) < 10) {
-            strip.setPixelColor(i, strip.Color(random(0, 255), random(0, 255), random(0, 255)));
-        } else {
-            strip.setPixelColor(i, strip.Color(0, 0, 0));
-        }
-    }
-    strip.show();
-    delay(random(50, delayTime));
-}
-
-// Star Shopping Effect
-void starShopping() {
-    for (int i = 0; i < NUM_LEDS; i++) {
-        if (random(0, 100) < 10) {
-            strip.setPixelColor(i, strip.Color(r, g, b));
-        } else {
-            strip.setPixelColor(i, strip.Color(0, 0, 0));
-        }
-    }
-    strip.show();
-    delay(delayTime);
-}
-
-// Not found
-void notFound() {
-    Serial.println("404: Not Found");
-    server.send(404, "text/plain", "404 - Page not found");
-}
-
-void runAnimation(int animationIndex) {
-    switch (animationIndex) {
-        case 0: runningLights(); break;
-        case 1: breathingLight(); break;
-        case 2: rainbowWave(); break;
-        case 3: stroboEffect(); break;
-        case 4: gradientEffect(); break;
-        case 5: fireflyEffect(); break;
-        case 6: starShopping(); break;
-        default: break;
-    }
-}
-
+/**
+ * @brief Stops any ongoing animation and clears the LED strip.
+ */
 void stopAnimation() {
+    Serial.println("Stopping animation.");
     animationRunning = false;
     currentAnimation = -1;
-
+    strip.show();
     server.send(200, "text/plain", "Animation stopped!");
 }
 
-void startAnimation(int animationIndex) {
-    if (currentAnimation == animationIndex) {
-        stopAnimation();    
+/**
+ * @brief Sets all LEDs to a specified color.
+ * @param color The color to set all LEDs to.
+ */
+void setAllLeds(uint32_t color) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+        strip.setPixelColor(i, color);
     }
+    strip.show();
+}
 
+/**
+ * @brief Turns the LEDs on with the specified color and brightness.
+ */
+void ledOn() {
+    stopAnimation();
+    Serial.println("Turning LEDs on.");
+    strip.setBrightness(brightness);
+    setAllLeds(strip.Color(r, g, b));
+    server.send(200, "text/plain", "LEDs on");
+}
+
+/**
+ * @brief Turns the LEDs off.
+ */
+void ledOff() {
+    Serial.println("Turning LEDs off.");
+    animationRunning = false;
+    currentAnimation = -1;
+    strip.clear();
+    strip.show();
+    server.send(200, "text/plain", "LEDs off");
+}
+
+/**
+ * @brief Handles unknown web requests.
+ */
+void notFound() {
+    Serial.println("404 Not Found");
+    server.send(404, "text/plain", "404 - Request not found");
+}
+
+/**
+ * @brief Running Lights animation.
+ */
+void runningLights() {
+    static int position = 0;
+    if (millis() - lastUpdate > delayTime) {
+        lastUpdate = millis();
+        strip.clear();
+        strip.setPixelColor(position, strip.Color(r, g, b));
+        strip.show();
+        position = (position + 1) % NUM_LEDS;
+    }
+}
+
+/**
+ * @brief Breathing Light animation.
+ */
+void breathingLight() {
+    static int step = 0;
+    static bool increasing = true;
+    if (millis() - lastUpdate > delayTime) {
+        lastUpdate = millis();
+        uint8_t level = (brightness * step) / 255;
+        setAllLeds(strip.Color(r * level / 255, g * level / 255, b * level / 255));
+        step += increasing ? 5 : -5;
+        if (step >= 255 || step <= 0) increasing = !increasing;
+    }
+}
+
+/**
+ * @brief Rainbow Wave animation.
+ */
+void rainbowWave() {
+    static uint16_t hue = 0;
+    if (millis() - lastUpdate > delayTime) {
+        lastUpdate = millis();
+        for (int i = 0; i < NUM_LEDS; i++) {
+            strip.setPixelColor(i, strip.ColorHSV(hue + (i * 65536 / NUM_LEDS), 255, brightness));
+        }
+        strip.show();
+        hue += 256;
+    }
+}
+
+/**
+ * @brief Gradient Wave Animation. Smoothly transitions from color A to color B and back.      
+ */
+void gradiant() {
+    static uint8_t step = 0;
+    static bool forward = true;
+
+    if (millis() - lastUpdate > delayTime) {
+        lastUpdate = millis();
+
+        uint8_t blend = step;
+        for (int i = 0; i < NUM_LEDS; i++) {
+            uint8_t rMix = (r * (255 - blend) + r1 * blend) / 255;
+            uint8_t gMix = (g * (255 - blend) + g1 * blend) / 255;
+            uint8_t bMix = (b * (255 - blend) + b1 * blend) / 255;
+            strip.setPixelColor(i, strip.Color(rMix, gMix, bMix));
+        }
+        strip.show();
+
+        step += forward ? 5 : -5;
+
+        if (step >= 255 || step <= 0) {
+            forward = !forward;
+        }
+    }
+}
+
+/**
+ * @brief Firefly Animation. Simulates the flickering effect of a fireplace.       
+ */
+void fireplace() {
+    if (millis() - lastUpdate > delayTime) {
+        lastUpdate = millis();
+        for (int i = 0; i < NUM_LEDS; i++) {
+            int flicker = random(120, 255);
+            strip.setPixelColor(i, strip.Color(flicker, flicker / 3, 0)); // Fire-like color
+        }
+        strip.show();
+    }
+}
+
+/**
+ * @brief Rain Animation. Random streaks of light move down like falling rain.   
+ */
+void rain() {
+    static int drops[NUM_LEDS] = {0};
+    if (millis() - lastUpdate > delayTime) {
+        lastUpdate = millis();
+        strip.clear();
+        for (int i = 0; i < NUM_LEDS; i++) {
+            if (random(100) < 5) { // 5% chance to start a new drop
+                drops[i] = random(3, 8); // Drop length
+            }
+            if (drops[i] > 0) {
+                strip.setPixelColor(i, strip.Color(r, g, b)); // Blue raindrop
+                drops[i]--;
+            }
+        }
+        strip.show();
+    }
+}
+
+/**
+ * @brief Executes the selected animation.
+ */
+void runAnimation() {
+    switch (currentAnimation) {
+        case 0: runningLights(); break;
+        case 1: breathingLight(); break;
+        case 2: rainbowWave(); break;
+        case 3: gradiant(); break;
+        case 4: fireplace(); break;
+        case 5: rain(); break;
+    }
+}
+
+/**
+ * @brief Extracts parameters from HTTP request.
+ * @return true if all required parameters are present, false otherwise.
+ */
+bool extractArguments() {
+    if (server.hasArg("r") && server.hasArg("g") && server.hasArg("b") && server.hasArg("br") && server.hasArg("d")) {
+        r = server.arg("r").toInt();
+        g = server.arg("g").toInt();
+        b = server.arg("b").toInt();
+        brightness = server.arg("br").toInt();
+        delayTime = server.arg("d").toInt();
+        return true;
+    }
+    server.send(400, "text/plain", "Missing arguments");
+    return false;
+}
+
+/**
+ * @brief Starts an animation.
+ * @param animationIndex The index of the animation to start.
+ */
+void startAnimation(int animationIndex) {
+    Serial.printf("Starting animation %d\n", animationIndex);
     currentAnimation = animationIndex;
     animationRunning = true;
     server.send(200, "text/plain", "Animation started!");
@@ -172,126 +237,41 @@ void startAnimation(int animationIndex) {
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("");
     Serial.println("Connecting to Wi-Fi...");
-
-    // Connect to the Wi-Fi network
     WiFi.begin(ssid, password);
-
-    // init LED-strip
     strip.begin();
+    strip.setBrightness(50);
+    strip.show();
 
-    // Wait until the connection is established
     while (WiFi.status() != WL_CONNECTED) {
         Serial.print(".");
-        runningLights();
+        delay(500);
     }
-
-    strip.clear();
-    strip.show();
-    strip.setBrightness(50);
-
-    Serial.println("WiFi connected!");
+    Serial.println("\nWiFi connected!");
     Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());  // Print the IP address of the ESP8266
+    Serial.println(WiFi.localIP());
 
-    // On & Off
-    server.on("/ledOn", HTTP_POST, []() { // Handle LED on request
-        if (server.hasArg("r") && server.hasArg("g") && server.hasArg("b") && server.hasArg("br")) {
-            r = server.arg("r").toInt();
-            g = server.arg("g").toInt();
-            b = server.arg("b").toInt();
-            brightness = server.arg("br").toInt();
-            ledOn();
-        } else {
-            server.send(400, "text/plain", "Missing arguments");
-        }
-    });
-
-    server.on("/stop", HTTP_POST, []() {
-        stopAnimation();
-    });
-
+    server.on("/ledOn", HTTP_POST, []() { if (extractArguments()) ledOn(); });
     server.on("/ledOff", ledOff);
-
-    // Animations
-    server.on("/runningLights", HTTP_POST, []() {
-        if (server.hasArg("r") && server.hasArg("g") && server.hasArg("b") && server.hasArg("d")) {
-            r = server.arg("r").toInt();
-            g = server.arg("g").toInt();
-            b = server.arg("b").toInt();
-            delayTime = server.arg("d").toInt();
-            startAnimation(0);
-        } else {
-            server.send(400, "text/plain", "Missing arguments");
-        }
-    });
-
-    server.on("/breathingLight", HTTP_POST, []() {
-        if (server.hasArg("r") && server.hasArg("g") && server.hasArg("b") && server.hasArg("br") && server.hasArg("d")) {
-            r = server.arg("r").toInt();
-            g = server.arg("g").toInt();
-            b = server.arg("b").toInt();
-            brightness = server.arg("br").toInt();
-            delayTime = server.arg("d").toInt();
-            startAnimation(1);
-        } else {
-            server.send(400, "text/plain", "Missing arguments");
-        }
-    });
-
-    server.on("/rainbowWave", HTTP_POST, []() {
-        startAnimation(2);  
-    });
-
-    server.on("/stroboEffect", HTTP_POST, []() { 
-        if (server.hasArg("r") && server.hasArg("g") && server.hasArg("b") && server.hasArg("d")) {
-            r = server.arg("r").toInt();
-            g = server.arg("g").toInt();
-            b = server.arg("b").toInt();
-            delayTime = server.arg("d").toInt();
-            startAnimation(3);
-        } else {
-            server.send(400, "text/plain", "Missing arguments");
-        }
-    });
-
-    server.on("/gradientEffect", HTTP_POST, []() { 
-        if (server.hasArg("r") && server.hasArg("g") && server.hasArg("b") && server.hasArg("r1") && server.hasArg("g1") && server.hasArg("b1")) {
-            r = server.arg("r").toInt();
-            g = server.arg("g").toInt();
-            b = server.arg("b").toInt();
-            r1 = server.arg("r1").toInt();
-            g1 = server.arg("g1").toInt();
-            b1 = server.arg("b1").toInt();
-            startAnimation(4);
-        } else {
-            server.send(400, "text/plain", "Missing arguments");
-        }
-    });
-
-    server.on("/fireflyEffect", HTTP_POST, []() {
-        if (server.hasArg("d")) {
-            delayTime = server.arg("d").toInt();
-            startAnimation(5);
-        } else {
-            server.send(400, "text/plain", "Missing arguments");
-        }
-    });
-
-    server.on("/starShopping", HTTP_POST, []() {
-        if (server.hasArg("r") && server.hasArg("g") && server.hasArg("b") && server.hasArg("d")) {
-            r = server.arg("r").toInt();
-            g = server.arg("g").toInt();
-            b = server.arg("b").toInt();
-            delayTime = server.arg("d").toInt();
-            startAnimation(6);
-        } else {
-            server.send(400, "text/plain", "Missing arguments");
-        }
-    });
-
+    server.on("/stop", stopAnimation);
     server.onNotFound(notFound);
+
+    server.on("/runningLights", HTTP_POST, []() { if (extractArguments()) startAnimation(0); });
+    server.on("/breathingLight", HTTP_POST, []() { if (extractArguments()) startAnimation(1); });
+    server.on("/rainbowWave", HTTP_POST, []() { if (extractArguments()) startAnimation(2); });
+    server.on("/gradiant", HTTP_POST, []() { 
+        if (extractArguments() && server.hasArg("r1") && server.hasArg("g1") && server.hasArg("b1")) {
+            r1 = server.arg("r1").toInt(); 
+            g1 = server.arg("g1").toInt(); 
+            b1 = server.arg("b1").toInt(); 
+            startAnimation(3); 
+        } else {
+            server.send(400, "text/plain", "missing args");    
+        }
+    });
+    server.on("/firefly", HTTP_POST, []() { if (extractArguments()) startAnimation(4); });
+    server.on("/rain", HTTP_POST, []() { if (extractArguments()) startAnimation(5); });
+
     server.begin();
     Serial.println("Server started.");
 }
@@ -300,6 +280,6 @@ void loop() {
     server.handleClient();
 
     if (animationRunning) {
-        runAnimation(currentAnimation);
+        runAnimation();
     }
 }
