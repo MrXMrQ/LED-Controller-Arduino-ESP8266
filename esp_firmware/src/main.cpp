@@ -79,6 +79,10 @@ void ledOff() {
     server.send(200, "text/plain", "LEDs off");
 }
 
+void responseESP() {
+    server.send(200, "text/plain", "webserver online");    
+}
+
 /**
  * @brief Handles unknown web requests.
  */
@@ -240,19 +244,22 @@ void setup() {
     Serial.println("Connecting to Wi-Fi...");
     WiFi.begin(ssid, password);
     strip.begin();
-    strip.setBrightness(50);
-    strip.show();
 
     while (WiFi.status() != WL_CONNECTED) {
         Serial.print(".");
         delay(500);
     }
+    strip.fill(strip.Color(255,255,255), 0, NUM_LEDS);
+    strip.setBrightness(10);
+    strip.show();
+
     Serial.println("\nWiFi connected!");
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
 
     server.on("/ledOn", HTTP_POST, []() { if (extractArguments()) ledOn(); });
     server.on("/ledOff", ledOff);
+    server.on("/esp8266", responseESP);
     server.on("/stop", stopAnimation);
     server.onNotFound(notFound);
 
