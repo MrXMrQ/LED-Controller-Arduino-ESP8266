@@ -1,9 +1,13 @@
 import customtkinter as ctk
 from ipScanner import IPScanner
+from requestHandler import RequestHandler
+import requests
 
 
 class Window(ctk.CTk):
     buttons = []
+    current_ip = ""
+    http_post = ""
 
     def __init__(
         self, title: str, width: int, height: int, maxWidth: int, maxHeight: int
@@ -42,9 +46,9 @@ class Window(ctk.CTk):
     def genTopFrame(self):
         top_frame = ctk.CTkFrame(
             self,
-            fg_color="#9E4F40",
+            fg_color="#3A3E6D",
             corner_radius=15,
-            border_color="#7C4A3B",
+            border_color="#2D315A",
             border_width=3,
             height=20,
         )
@@ -67,44 +71,44 @@ class Window(ctk.CTk):
             width=200,
             height=50,
             corner_radius=7,
-            fg_color="#2F3A49",
-            hover_color="#004F49",
-            text_color="yellow",
-            font=("Inter", 16, "bold"),
-            border_width=3,
-            border_color="#333333",
+            fg_color="#8387C4",
+            hover_color="#8378C4",
+            text_color="#2D315A",
+            font=("Inter", 20, "bold"),
+            border_width=4,
+            border_color="#2D315A",
         )
         self.scanButton.grid(row=1, column=0, pady=5, padx=10)
 
         self.colorButton = ctk.CTkButton(
             top_frame,
-            text="Color",
+            text="COLOR",
             command=self.colorButtonClick,
             width=200,
             height=50,
             corner_radius=7,
-            fg_color="#2F3A49",
-            hover_color="#004F49",
+            fg_color="#8387C4",
+            hover_color="#8378C4",
             text_color="white",
-            font=("Inter", 16, "bold"),
-            border_width=3,
-            border_color="#333333",
+            font=("Inter", 20, "bold"),
+            border_width=4,
+            border_color="#2D315A",
         )
         self.colorButton.grid(row=1, column=1, pady=5, padx=10)
 
         self.animationButton = ctk.CTkButton(
             top_frame,
-            text="Animation",
+            text="ANIMATION",
             command=self.animationButtonClick,
             width=200,
             height=50,
             corner_radius=7,
-            fg_color="#2F3A49",
-            hover_color="#004F49",
+            fg_color="#8387C4",
+            hover_color="#8378C4",
             text_color="white",
-            font=("Inter", 16, "bold"),
-            border_width=3,
-            border_color="#333333",
+            font=("Inter", 20, "bold"),
+            border_width=4,
+            border_color="#2D315A",
         )
         self.animationButton.grid(row=1, column=2, pady=5, padx=10)
 
@@ -115,29 +119,29 @@ class Window(ctk.CTk):
             width=200,
             height=50,
             corner_radius=7,
-            fg_color="#2F3A49",
-            hover_color="#004F49",
+            fg_color="#8387C4",
+            hover_color="#8378C4",
             text_color="white",
-            font=("Inter", 16, "bold"),
-            border_width=3,
-            border_color="#333333",
+            font=("Inter", 20, "bold"),
+            border_width=4,
+            border_color="#2D315A",
         )
         self.singleLEDButton.grid(row=1, column=3, pady=5, padx=10)
 
-        top_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=7)
+        top_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=3)
 
         return top_frame
 
     def genMidFrame(self):
         middle_frame = ctk.CTkFrame(
             self,
-            fg_color="#9E4F40",
+            fg_color="#3A3E6D",
             corner_radius=15,
-            border_color="#7C4A3B",
+            border_color="#2D315A",
             border_width=3,
             height=40,
         )
-        middle_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=7)
+        middle_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=3)
 
         return middle_frame
 
@@ -146,16 +150,24 @@ class Window(ctk.CTk):
         devices = ips.get_devices()
 
         if devices == []:
-            return ["No devices found"]
+            return ["EMPTY"]
 
         return devices
+
+    def ledPauseClick(self):
+        response = requests.get(f"http://{Window.current_ip}/stop")
+        print(response)
+
+    def ledOffClick(self):
+        response = requests.get(f"http://{Window.current_ip}/ledOff")
+        print(response)
 
     def genBotFrame(self):
         bottom_frame = ctk.CTkFrame(
             self,
-            fg_color="#9E4F40",
+            fg_color="#3A3E6D",
             corner_radius=15,
-            border_color="#7C4A3B",
+            border_color="#2D315A",
             border_width=3,
             height=20,
         )
@@ -166,65 +178,72 @@ class Window(ctk.CTk):
             bottom_frame.grid_columnconfigure(col, weight=1)
 
         options = self.scanIPS()
-        option_menu = ctk.CTkOptionMenu(
+        Window.current_ip = options[0]
+        self.option_menu = ctk.CTkOptionMenu(
             bottom_frame,
             values=options,
             width=200,
             height=50,
             corner_radius=7,
-            fg_color="#2F3A49",
+            fg_color="#8387C4",
             text_color="white",
-            font=("Inter", 16, "bold"),
+            font=("Inter", 20, "bold"),
+            button_color="#8387C4",
+            button_hover_color="#6D72A3",
+            dropdown_fg_color="#8387C4",
+            dropdown_text_color="white",
+            command=lambda value: setattr(Window, "current_ip", value),
         )
-        option_menu.grid(row=0, column=0, pady=5, padx=10)
+        self.option_menu.grid(row=0, column=0, pady=5, padx=10)
 
-        ledOnButton = ctk.CTkButton(
+        ledPauseButton = ctk.CTkButton(
             bottom_frame,
-            text="LED ON",
+            text="TEMP",
             width=200,
             height=50,
             corner_radius=7,
-            fg_color="#2F3A49",
-            hover_color="#004F49",
+            fg_color="#8387C4",
+            hover_color="#8378C4",
             text_color="white",
-            font=("Inter", 16, "bold"),
-            border_width=3,
-            border_color="#333333",
+            font=("Inter", 20, "bold"),
+            border_width=4,
+            border_color="#2D315A",
         )
-        ledOnButton.grid(row=0, column=1, pady=5, padx=10)
+        ledPauseButton.grid(row=0, column=1, pady=5, padx=10)
 
         ledOffButton = ctk.CTkButton(
             bottom_frame,
             text="LED OFF",
+            command=self.ledOffClick,
             width=200,
             height=50,
             corner_radius=7,
-            fg_color="#2F3A49",
-            hover_color="#004F49",
+            fg_color="#8387C4",
+            hover_color="#8378C4",
             text_color="white",
-            font=("Inter", 16, "bold"),
-            border_width=3,
-            border_color="#333333",
+            font=("Inter", 20, "bold"),
+            border_width=4,
+            border_color="#2D315A",
         )
         ledOffButton.grid(row=0, column=2, pady=5, padx=10)
 
         self.pushButton = ctk.CTkButton(
             bottom_frame,
-            text="PUSH",
+            text="POST",
             command=self.pushButtonClick,
             width=200,
             height=50,
             corner_radius=7,
-            fg_color="#2F3A49",
-            hover_color="#004F49",
+            fg_color="#8387C4",
+            hover_color="#8378C4",
             text_color="white",
-            font=("Inter", 16, "bold"),
-            border_width=3,
-            border_color="#333333",
+            font=("Inter", 20, "bold"),
+            border_width=4,
+            border_color="#2D315A",
         )
         self.pushButton.grid(row=0, column=3, pady=5, padx=10)
 
-        bottom_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=7)
+        bottom_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=3)
 
         return bottom_frame
 
@@ -258,7 +277,7 @@ class Window(ctk.CTk):
 
     def scanButtonClick(self):
         self.unmark()
-        self.scanButton.configure(text_color="yellow")
+        self.scanButton.configure(text_color="#2D315A")
         self.removeChilds()
 
         middle_label = self.scanLabel
@@ -266,7 +285,7 @@ class Window(ctk.CTk):
 
     def colorButtonClick(self):
         self.unmark()
-        self.colorButton.configure(text_color="yellow")
+        self.colorButton.configure(text_color="#2D315A")
 
         self.removeChilds()
 
@@ -275,7 +294,7 @@ class Window(ctk.CTk):
 
     def animationButtonClick(self):
         self.unmark()
-        self.animationButton.configure(text_color="yellow")
+        self.animationButton.configure(text_color="#2D315A")
 
         self.removeChilds()
 
@@ -284,7 +303,7 @@ class Window(ctk.CTk):
 
     def ledButtonClick(self):
         self.unmark()
-        self.singleLEDButton.configure(text_color="yellow")
+        self.singleLEDButton.configure(text_color="#2D315A")
 
         self.removeChilds()
 
@@ -293,3 +312,5 @@ class Window(ctk.CTk):
 
     def pushButtonClick(self):
         self.unmark()
+
+        print(Window.current_ip, Window.http_post)
