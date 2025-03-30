@@ -1,3 +1,5 @@
+from tkinter.tix import COLUMN
+from turtle import width
 import customtkinter as ctk
 from ipScanner import IPScanner
 import requests
@@ -102,7 +104,7 @@ class Window(ctk.CTk):
     def initMidFrame(self) -> ctk.CTkFrame:
         middleFrame = ctk.CTkFrame(
             master=self,
-            height=40,
+            height=50,
             corner_radius=15,
             border_width=4,
             border_color="#2D315A",
@@ -124,7 +126,7 @@ class Window(ctk.CTk):
         botFrame.grid_columnconfigure((0, 1, 2, 3), weight=1)
         botFrame.grid_rowconfigure(0, weight=1)
 
-        options = [""]  # self.fillOptions()
+        options = self.fillOptions()
         self.option_menu = ctk.CTkOptionMenu(
             botFrame,
             values=options,
@@ -184,15 +186,40 @@ class Window(ctk.CTk):
         return devices
 
     def initScanTab(self) -> ctk.CTkLabel:
-        return ctk.CTkLabel(
-            self.midFrame,
-            text="1",
-            fg_color="gray",
-            corner_radius=15,
-        )
+        def temp():
+            pass
 
-    def initColorTab(self) -> ctk.CTkLabel:
-        def update(r, g, b):
+        frame = ctk.CTkFrame(self.midFrame, height=50)
+        frame.grid_rowconfigure((0, 1), weight=1)
+        frame.grid_columnconfigure(0, weight=1)
+
+        topFrame = ctk.CTkFrame(frame, corner_radius=15, fg_color="Blue")
+        topFrame.grid(row=0, column=0, padx=15, sticky="nsew")
+
+        topFrame.grid_rowconfigure((0, 1), weight=1)
+        topFrame.grid_columnconfigure((0, 1, 2, 3), weight=1)
+
+        scanButton = ctk.CTkButton(
+            topFrame, text="SCAN", command=temp, **Window.button_options
+        )
+        scanButton.grid(row=1, column=1, columnspan=2, sticky="ew", pady=10)
+
+        scan_entry = ctk.CTkEntry(topFrame)
+        scan_entry.grid(row=0, column=1, columnspan=2, sticky="ew", pady=10)
+        scan_entry.bind("<Return>", temp)
+
+        s = ctk.CTkButton(
+            topFrame, text="search", command=temp, **Window.button_options
+        )
+        s.grid(row=0, column=2, sticky="ew", pady=10)
+
+        botFrame = ctk.CTkFrame(frame, corner_radius=15, fg_color="Yellow")
+        botFrame.grid(row=1, column=0, padx=15)
+
+        return frame
+
+    def initColorTab(self) -> ctk.CTkFrame:
+        def update(r, g, b) -> None:
             Window.r_value = int(r)
             Window.g_value = int(g)
             Window.b_value = int(b)
@@ -225,7 +252,7 @@ class Window(ctk.CTk):
         def update_brightness():
             Window.brightness = int(brightness_slider.get())
 
-        def update_from_hex() -> None:
+        def update_from_hex(event) -> None:
             hex_value = hex_entry.get()
 
             if len(hex_value) == 7 and hex_value[0] == "#":
@@ -255,7 +282,7 @@ class Window(ctk.CTk):
             else:
                 print("Unknown HEX value")
 
-        def update_from_rgb() -> None:
+        def update_from_rgb(event) -> None:
             try:
                 r_value = int(r_entry.get())
                 g_value = int(g_entry.get())
@@ -280,7 +307,7 @@ class Window(ctk.CTk):
             except ValueError:
                 print("Unknown RGB value")
 
-        frame = ctk.CTkFrame(self.midFrame)
+        frame = ctk.CTkFrame(self.midFrame, height=50)
         frame.grid_rowconfigure((0, 1), weight=1)
         frame.grid_columnconfigure((0, 1), weight=1)
 
@@ -334,14 +361,17 @@ class Window(ctk.CTk):
         r_entry = ctk.CTkEntry(leftTopFrame)
         r_entry.grid(row=0, column=2, padx=10, pady=10)
         r_entry.insert(int(r_slider.get()), str(int(r_slider.get())))
+        r_entry.bind("<Return>", update_from_rgb)
 
         g_entry = ctk.CTkEntry(leftTopFrame)
         g_entry.grid(row=1, column=2, padx=10, pady=10)
         g_entry.insert(int(g_slider.get()), str(int(g_slider.get())))
+        g_entry.bind("<Return>", update_from_rgb)
 
         b_entry = ctk.CTkEntry(leftTopFrame)
         b_entry.grid(row=2, column=2, padx=10, pady=10)
         b_entry.insert(int(b_slider.get()), str(int(b_slider.get())))
+        b_entry.bind("<Return>", update_from_rgb)
 
         rgb_button = ctk.CTkButton(
             leftTopFrame,
@@ -362,6 +392,7 @@ class Window(ctk.CTk):
             0,
             f"#{int(int(r_entry.get())):02x}{int(int(g_entry.get())):02x}{int(int(b_entry.get())):02x}",
         )
+        hex_entry.bind("<Return>", update_from_hex)
 
         hex_button = ctk.CTkButton(
             leftBotFrame, text="HEX", command=update_from_hex, **Window.button_options
@@ -412,8 +443,66 @@ class Window(ctk.CTk):
 
         return frame
 
-    def initAnimationTab(self) -> ctk.CTkLabel:
-        return ctk.CTkLabel(self.midFrame, text="3")
+    def initAnimationTab(self) -> ctk.CTkFrame:
+        def on_mouse_wheel(event):
+            canvas.yview_scroll(-1 * (event.delta // 120), "units")
+
+        def temp():
+            pass
+
+        frame = ctk.CTkFrame(self.midFrame, height=50)
+        frame.grid_rowconfigure(0, weight=1)
+        frame.grid_columnconfigure((0, 1), weight=1)
+
+        leftFrame = ctk.CTkFrame(frame, border_color="black", border_width=4)
+        leftFrame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+
+        canvas = ctk.CTkCanvas(leftFrame, highlightthickness=0)
+        scrollbar = ctk.CTkScrollbar(leftFrame, command=canvas.yview)
+
+        contentFrame = ctk.CTkFrame(canvas, fg_color="gray", height=50)
+        contentFrame.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=contentFrame, anchor="nw")
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="left", fill="y", padx=10, pady=10)
+        canvas.pack(side="right", fill="both", expand=True, pady=10)
+
+        canvas.bind_all("<MouseWheel>", on_mouse_wheel)
+
+        rightFrame = ctk.CTkFrame(frame, fg_color="yellow")  # Etwas hellerer Bereich
+        rightFrame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+
+        button_data = [
+            ("RUNNING", temp),
+            ("BREATHING", temp),
+            ("RAINBOWWAVE", temp),
+            ("GRADIANT", temp),
+            ("FIREFLY", temp),
+            ("RAIN", temp),
+            ("anim", temp),
+            ("anim", temp),
+            ("anim", temp),
+            ("anim", temp),
+        ]
+
+        contentFrame.grid_rowconfigure(tuple(range(len(button_data))), weight=1)
+
+        for row, (text, command) in enumerate(button_data):
+            btn = ctk.CTkButton(
+                contentFrame,
+                text=text,
+                command=command,
+                **Window.button_options,
+            )
+            btn.grid(row=row, column=0, padx=10, pady=10, sticky="ew")
+
+        # frame.pack(fill="both", expand=True)
+        return frame
 
     def initSingeLEDTab(self) -> ctk.CTkLabel:
         return ctk.CTkLabel(self.midFrame, text="4")
