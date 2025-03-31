@@ -1,5 +1,3 @@
-from tkinter.tix import COLUMN
-from turtle import width
 import customtkinter as ctk
 from ipScanner import IPScanner
 import requests
@@ -21,7 +19,8 @@ class Window(ctk.CTk):
     r_value = 127
     g_value = 127
     b_value = 127
-    brightness = 255
+    brightness = 127
+    speed = 50
 
     def __init__(
         self, title: str, width: int, height: int, maxWidth: int, maxHeight: int
@@ -126,7 +125,7 @@ class Window(ctk.CTk):
         botFrame.grid_columnconfigure((0, 1, 2, 3), weight=1)
         botFrame.grid_rowconfigure(0, weight=1)
 
-        options = self.fillOptions()
+        options = [""]  # self.fillOptions()
         self.option_menu = ctk.CTkOptionMenu(
             botFrame,
             values=options,
@@ -168,7 +167,13 @@ class Window(ctk.CTk):
         requests.post(f"{Window.url}{self.option_menu.get()}/ledOff")
 
     def pushButtonClick(self) -> None:
-        print(Window.r_value, Window.g_value, Window.b_value, Window.brightness)
+        print(
+            Window.r_value,
+            Window.g_value,
+            Window.b_value,
+            Window.brightness,
+            Window.speed,
+        )
 
         if self.option_menu.get() == "":
             print("Unable to push")
@@ -324,7 +329,7 @@ class Window(ctk.CTk):
             command=lambda x: update_color(),
         )
         r_slider.grid(row=0, column=0, padx=10, pady=10)
-        r_slider.set(255 / 2)
+        r_slider.set(Window.r_value)
         r_slider.configure(fg_color="red")
 
         r_label = ctk.CTkLabel(leftTopFrame, text="R", text_color="red")
@@ -338,7 +343,7 @@ class Window(ctk.CTk):
             command=lambda x: update_color(),
         )
         g_slider.grid(row=1, column=0, padx=10, pady=10)
-        g_slider.set(255 / 2)
+        g_slider.set(Window.g_value)
         g_slider.configure(fg_color="green")
 
         g_label = ctk.CTkLabel(leftTopFrame, text="G", text_color="green")
@@ -352,7 +357,7 @@ class Window(ctk.CTk):
             command=lambda x: update_color(),
         )
         b_slider.grid(row=2, column=0, padx=10, pady=10)
-        b_slider.set(255 / 2)
+        b_slider.set(Window.b_value)
         b_slider.configure(fg_color="blue")
 
         b_label = ctk.CTkLabel(leftTopFrame, text="B", text_color="blue")
@@ -434,7 +439,7 @@ class Window(ctk.CTk):
             command=lambda x: update_brightness(),
         )
         brightness_slider.grid(row=0, column=1)
-        brightness_slider.set(255 / 2)
+        brightness_slider.set(Window.brightness)
 
         night_label = ctk.CTkLabel(
             rightBotFrame, text="🌑", text_color="white", font=("inter", 20, "bold")
@@ -444,64 +449,137 @@ class Window(ctk.CTk):
         return frame
 
     def initAnimationTab(self) -> ctk.CTkFrame:
-        def on_mouse_wheel(event):
+        def animButtonClick(button: ctk.CTkButton) -> None:
+            print(button._text)
+
+        def update_brightness() -> None:
+            Window.brightness = brightness_slider.get()
+
+        def update_speed() -> None:
+            Window.speed = speedSlider.get()
+
+        def on_mousewheel(event) -> None:
             canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
-        def temp():
-            pass
+        def resizeButton(event) -> None:
+            canvas.itemconfigure(
+                window, width=event.width - scrollbar.winfo_width() - 30
+            )
 
         frame = ctk.CTkFrame(self.midFrame, height=50)
         frame.grid_rowconfigure(0, weight=1)
-        frame.grid_columnconfigure((0, 1), weight=1)
+        frame.grid_columnconfigure(0, weight=1)
 
-        leftFrame = ctk.CTkFrame(frame, border_color="black", border_width=4)
+        leftFrame = ctk.CTkFrame(frame, corner_radius=15, fg_color="gray")
         leftFrame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        canvas = ctk.CTkCanvas(leftFrame, highlightthickness=0)
-        scrollbar = ctk.CTkScrollbar(leftFrame, command=canvas.yview)
-
-        contentFrame = ctk.CTkFrame(canvas, fg_color="gray", height=50)
-        contentFrame.bind(
-            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        canvas = ctk.CTkCanvas(
+            leftFrame, highlightthickness=0, bg=leftFrame.cget("fg_color")
+        )
+        scrollbar = ctk.CTkScrollbar(
+            leftFrame, orientation="vertical", command=canvas.yview
         )
 
-        canvas.create_window((0, 0), window=contentFrame, anchor="nw")
+        content_frame = ctk.CTkFrame(canvas)
+        content_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
+        )
 
+        window = canvas.create_window((0, 0), window=content_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
-        scrollbar.pack(side="left", fill="y", padx=10, pady=10)
-        canvas.pack(side="right", fill="both", expand=True, pady=10)
-
-        canvas.bind_all("<MouseWheel>", on_mouse_wheel)
-
-        rightFrame = ctk.CTkFrame(frame, fg_color="yellow")  # Etwas hellerer Bereich
-        rightFrame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
-
-        button_data = [
-            ("RUNNING", temp),
-            ("BREATHING", temp),
-            ("RAINBOWWAVE", temp),
-            ("GRADIANT", temp),
-            ("FIREFLY", temp),
-            ("RAIN", temp),
-            ("anim", temp),
-            ("anim", temp),
-            ("anim", temp),
-            ("anim", temp),
+        button_text = [
+            "Rainbow",
+            "Pulse",
+            "Chasing light",
+            "Raindrop",
+            "Strobo",
+            "Campfire",
         ]
 
-        contentFrame.grid_rowconfigure(tuple(range(len(button_data))), weight=1)
+        self.animationButtons = []
 
-        for row, (text, command) in enumerate(button_data):
+        for text in button_text:
             btn = ctk.CTkButton(
-                contentFrame,
+                content_frame,
                 text=text,
-                command=command,
                 **Window.button_options,
             )
-            btn.grid(row=row, column=0, padx=10, pady=10, sticky="ew")
+            btn.pack(fill="x", padx=5, pady=5)
+            self.animationButtons.append(btn)
 
-        # frame.pack(fill="both", expand=True)
+        for btn in self.animationButtons:
+            btn.configure(command=lambda b=btn: animButtonClick(b))
+
+        for btn in content_frame.winfo_children():
+            btn.configure(width=content_frame.winfo_width())
+
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+        leftFrame.bind("<Configure>", resizeButton)
+
+        canvas.pack(side="right", fill="both", expand=True, pady=10, padx=5)
+        scrollbar.pack(side="right", fill="y", pady=15, padx=5)
+
+        rightFrame = ctk.CTkFrame(frame, width=500)
+        rightFrame.grid(row=0, column=1, sticky="nsew", padx=15, pady=15)
+
+        rightFrame.grid_rowconfigure((0, 1, 2, 3), weight=1)
+        rightFrame.grid_columnconfigure(0, weight=1)
+
+        topFrame = ctk.CTkFrame(
+            rightFrame,
+            fg_color=f"#{int(Window.r_value):02x}{int(Window.g_value):02x}{int(Window.b_value):02x}",
+            border_color="black",
+            border_width=5,
+        )
+        topFrame.grid(row=0, rowspan=2, column=0, padx=15, pady=15)
+
+        botFrame = ctk.CTkFrame(rightFrame)
+        botFrame.grid_rowconfigure((0, 1), weight=1)
+        botFrame.grid_columnconfigure((0, 1, 2), weight=1)
+        botFrame.grid(row=3, column=0, padx=15, pady=15)
+
+        sun_label = ctk.CTkLabel(
+            botFrame, text="☀️", text_color="white", font=("inter", 20, "bold")
+        )
+        sun_label.grid(row=0, column=2, padx=10, pady=10)
+
+        brightness_slider = ctk.CTkSlider(
+            botFrame,
+            from_=0,
+            to=255,
+            number_of_steps=256,
+            command=lambda x: update_brightness(),
+        )
+        brightness_slider.grid(row=0, column=1)
+        brightness_slider.set(Window.brightness)
+
+        night_label = ctk.CTkLabel(
+            botFrame, text="🌑", text_color="white", font=("inter", 20, "bold")
+        )
+        night_label.grid(row=0, column=0, padx=10, pady=10)
+
+        speedUp = ctk.CTkLabel(
+            botFrame, text="⏫", text_color="white", font=("inter", 20, "bold")
+        )
+        speedUp.grid(row=1, column=2, padx=10, pady=10)
+
+        speedSlider = ctk.CTkSlider(
+            botFrame,
+            from_=0,
+            to=100,
+            number_of_steps=100,
+            command=lambda x: update_speed(),
+        )
+        speedSlider.grid(row=1, column=1)
+        speedSlider.set(Window.speed)
+
+        speedDown = ctk.CTkLabel(
+            botFrame, text="⏬", text_color="white", font=("inter", 20, "bold")
+        )
+        speedDown.grid(row=1, column=0, padx=10, pady=10)
+
         return frame
 
     def initSingeLEDTab(self) -> ctk.CTkLabel:
