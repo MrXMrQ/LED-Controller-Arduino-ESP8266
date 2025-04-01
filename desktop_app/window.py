@@ -497,7 +497,6 @@ class Window(ctk.CTk):
             return colors
 
         def start_rainbow_wave() -> None:
-            print("rainbowwave")
             colors = [
                 (255, 0, 0),
                 (255, 127, 0),
@@ -641,7 +640,8 @@ class Window(ctk.CTk):
             Window.speed = speedSlider.get()
 
         def on_mousewheel(event) -> None:
-            canvas.yview_scroll(-1 * (event.delta // 120), "units")
+            if canvas.winfo_exists() and canvas.winfo_ismapped():
+                canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
         def resizeButton(event) -> None:
             canvas.itemconfigure(
