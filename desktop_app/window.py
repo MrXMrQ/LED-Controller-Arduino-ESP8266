@@ -18,10 +18,10 @@ class Window(ctk.CTk):
         "border_color": "#2D315A",
     }
 
-    r_value = 127
-    g_value = 127
-    b_value = 127
-    brightness = 127
+    r_value = 255
+    g_value = 0
+    b_value = 255
+    brightness = 255
     speed = 50
 
     def __init__(
@@ -465,7 +465,7 @@ class Window(ctk.CTk):
         def reset_leds() -> None:
             for led in leds:
                 if led.winfo_exists() and led.winfo_ismapped():
-                    led.configure(led, fg_color="gray20")
+                    led.configure(led, fg_color="black")
 
         def adjust_brightness(rgb: tuple, brightness) -> None:
             factor = brightness / 255
@@ -607,7 +607,7 @@ class Window(ctk.CTk):
                         )
                     )
                 self.after(
-                    int(Window.speed) + 200, lambda: led.configure(fg_color="gray20")
+                    int(Window.speed) + 200, lambda: led.configure(fg_color="black")
                 )
                 self.animation_task = self.after(random.randint(100, 500), animate)
 
@@ -634,7 +634,7 @@ class Window(ctk.CTk):
 
                     led.configure(fg_color=random.choice(colors))
                     self.after(
-                        int(Window.speed), lambda: led.configure(fg_color="gray20")
+                        int(Window.speed), lambda: led.configure(fg_color="black")
                     )
                 self.animation_task = self.after(random.randint(100, 400), animate)
 
@@ -714,7 +714,9 @@ class Window(ctk.CTk):
         canvas.pack(side="right", fill="both", expand=True, pady=10, padx=20)
         scrollbar.pack(side="right", fill="y", pady=15, padx=5)
 
-        rightFrame = ctk.CTkFrame(frame, width=500)
+        rightFrame = ctk.CTkFrame(
+            frame, width=500, border_color="black", border_width=5, corner_radius=15
+        )
         rightFrame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
         rightFrame.grid_rowconfigure((0, 1, 2, 3), weight=1)
@@ -734,6 +736,7 @@ class Window(ctk.CTk):
             led = ctk.CTkFrame(
                 topFrame,
                 border_color="black",
+                fg_color="black",
                 border_width=5,
                 width=50,
                 height=50,
