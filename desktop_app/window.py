@@ -1,3 +1,5 @@
+import random
+from turtle import color
 import customtkinter as ctk
 from ipScanner import IPScanner
 import requests
@@ -45,6 +47,9 @@ class Window(ctk.CTk):
 
         self.botFrame = self.initBotFrame()
         self.botFrame.grid(row=2, column=0, sticky="nsew", padx=20, pady=3)
+
+        self.running = False
+        self.animation_task = None
 
         self.current_tab = self.initScanTab()
         self.current_tab.pack(
@@ -449,11 +454,188 @@ class Window(ctk.CTk):
         return frame
 
     def initAnimationTab(self) -> ctk.CTkFrame:
-        def animButtonClick(button: ctk.CTkButton) -> None:
-            print(button._text)
+        def start_animation(animation_function) -> None:
+            self.running = False
+            if self.animation_task:
+                self.after_cancel(self.animation_task)
+            reset_leds()
+            self.running = True
+            animation_function()
+
+        def reset_leds() -> None:
+            for led in leds:
+                led.configure(led, fg_color="gray20")
+
+        def adjust_brightness(rgb: tuple, brightness) -> None:
+            factor = brightness / 255
+
+            new_r = int(rgb[0] * factor)
+            new_g = int(rgb[1] * factor)
+            new_b = int(rgb[2] * factor)
+
+            new_r = max(0, min(new_r, 255))
+            new_g = max(0, min(new_g, 255))
+            new_b = max(0, min(new_b, 255))
+
+            return f"#{new_r:02x}{new_g:02x}{new_b:02x}"
+
+        def generate_similar_colors(base_color, num_colors=4) -> list:
+            r, g, b = [int(base_color[i : i + 2], 16) for i in range(1, 7, 2)]
+            colors = []
+            colors.append(base_color)
+
+            step = 255 // num_colors
+
+            for i in range(-num_colors // 2, num_colors // 2 + 1):
+
+                new_r = max(0, min(255, r + i * step))
+                new_g = max(0, min(255, g + i * step))
+                new_b = max(0, min(255, b + i * step))
+
+                colors.append(f"#{new_r:02x}{new_g:02x}{new_b:02x}")
+
+            return colors
+
+        def start_rainbow_wave() -> None:
+            print("rainbowwave")
+            colors = [
+                (255, 0, 0),
+                (255, 127, 0),
+                (255, 255, 0),
+                (0, 255, 0),
+                (0, 0, 255),
+                (75, 0, 130),
+                (139, 0, 255),
+            ]
+
+            index = 0
+
+            def animate() -> None:
+                nonlocal index
+                if not self.running:
+                    return
+                for i, led in enumerate(leds):
+                    led.configure(
+                        fg_color=adjust_brightness(
+                            colors[(index + i) % len(colors)], Window.brightness
+                        )
+                    )
+                index = (index + 1) % len(colors)
+                self.animation_task = self.after(int(Window.speed), animate)
+
+            start_animation(animate)
+
+        def start_pulsing_light() -> None:
+            brightness_levels = [
+                f"#FF{hex(i)[2:]:0>2}{hex(i)[2:]:0>2}" for i in range(50, 255, 20)
+            ] + [f"#FF{hex(i)[2:]:0>2}{hex(i)[2:]:0>2}" for i in range(255, 50, -20)]
+
+            index = 0
+
+            def animate() -> None:
+                nonlocal index
+                if not self.running:
+                    return
+                for led in leds:
+                    led.configure(fg_color=brightness_levels[index])
+                index = (index + 1) % len(brightness_levels)
+                self.animation_task = self.after(int(Window.speed), animate)
+
+            start_animation(animate)
+
+        def start_chasing_light() -> None:
+            index = 0
+
+            def animate() -> None:
+                nonlocal index
+                if not self.running:
+                    return
+                reset_leds()
+                leds[index].configure(
+                    fg_color=adjust_brightness(
+                        (Window.r_value, Window.g_value, Window.b_value),
+                        Window.brightness,
+                    )
+                )
+                index = (index + 1) % len(leds)
+                self.animation_task = self.after(int(Window.speed), animate)
+
+            start_animation(animate)
+
+        def start_strobe() -> None:
+            colors = [
+                adjust_brightness(
+                    (Window.r_value, Window.g_value, Window.b_value), Window.brightness
+                ),
+                "#000000",
+            ]
+            index = 0
+
+            def animate() -> None:
+                nonlocal index
+                if not self.running:
+                    return
+                reset_leds()
+
+                colors[0] = adjust_brightness(
+                    (Window.r_value, Window.g_value, Window.b_value), Window.brightness
+                )
+
+                for led in leds:
+                    led.configure(fg_color=colors[index])
+                index = 1 - index
+                self.animation_task = self.after(int(Window.speed), animate)
+
+            start_animation(animate)
+
+        def start_raindrop() -> None:
+            def animate() -> None:
+                if not self.running:
+                    return
+
+                reset_leds()
+                led = random.choice(leds)
+                led.configure(
+                    fg_color=adjust_brightness(
+                        (Window.r_value, Window.g_value, Window.b_value),
+                        Window.brightness,
+                    )
+                )
+                self.after(
+                    int(Window.speed) + 200, lambda: led.configure(fg_color="gray20")
+                )
+                self.animation_task = self.after(random.randint(100, 500), animate)
+
+            start_animation(animate)
+
+        def start_fireplace() -> None:
+            base_color = adjust_brightness(
+                (Window.r_value, Window.g_value, Window.b_value),
+                Window.brightness,
+            )
+            colors = generate_similar_colors(base_color, 6)
+
+            def animate() -> None:
+                if not self.running:
+                    return
+                reset_leds()
+                led = random.choice(leds)
+                base_color = adjust_brightness(
+                    (Window.r_value, Window.g_value, Window.b_value),
+                    Window.brightness,
+                )
+                colors = generate_similar_colors(base_color, 6)
+                led.configure(fg_color=random.choice(colors))
+                self.after(int(Window.speed), lambda: led.configure(fg_color="gray20"))
+                self.animation_task = self.after(random.randint(100, 400), animate)
+
+            start_animation(animate)
 
         def update_brightness() -> None:
             Window.brightness = brightness_slider.get()
+
+            if self.running:
+                pass
 
         def update_speed() -> None:
             Window.speed = speedSlider.get()
@@ -463,14 +645,20 @@ class Window(ctk.CTk):
 
         def resizeButton(event) -> None:
             canvas.itemconfigure(
-                window, width=event.width - scrollbar.winfo_width() - 30
+                window, width=event.width - scrollbar.winfo_width() - 60
             )
 
         frame = ctk.CTkFrame(self.midFrame, height=50)
         frame.grid_rowconfigure(0, weight=1)
         frame.grid_columnconfigure(0, weight=1)
 
-        leftFrame = ctk.CTkFrame(frame, corner_radius=15, fg_color="gray")
+        leftFrame = ctk.CTkFrame(
+            frame,
+            corner_radius=15,
+            fg_color="gray20",
+            border_color="black",
+            border_width=5,
+        )
         leftFrame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         canvas = ctk.CTkCanvas(
@@ -489,28 +677,23 @@ class Window(ctk.CTk):
         window = canvas.create_window((0, 0), window=content_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
-        button_text = [
-            "Rainbow",
-            "Pulse",
-            "Chasing light",
-            "Raindrop",
-            "Strobo",
-            "Campfire",
+        buttons = [
+            ("🌈 Rainbow Wave", start_rainbow_wave),
+            ("💓 Pulsing Light", start_pulsing_light),
+            ("🚀 Chasing Light", start_chasing_light),
+            ("⚡ Strobe", start_strobe),
+            ("🌧️ Raindrop", start_raindrop),
+            ("🔥 Fireplace", start_fireplace),
         ]
 
         self.animationButtons = []
 
-        for text in button_text:
+        for text, command in buttons:
             btn = ctk.CTkButton(
-                content_frame,
-                text=text,
-                **Window.button_options,
+                content_frame, text=text, command=command, **Window.button_options
             )
             btn.pack(fill="x", padx=5, pady=5)
             self.animationButtons.append(btn)
-
-        for btn in self.animationButtons:
-            btn.configure(command=lambda b=btn: animButtonClick(b))
 
         for btn in content_frame.winfo_children():
             btn.configure(width=content_frame.winfo_width())
@@ -518,24 +701,38 @@ class Window(ctk.CTk):
         canvas.bind_all("<MouseWheel>", on_mousewheel)
         leftFrame.bind("<Configure>", resizeButton)
 
-        canvas.pack(side="right", fill="both", expand=True, pady=10, padx=5)
+        canvas.pack(side="right", fill="both", expand=True, pady=10, padx=20)
         scrollbar.pack(side="right", fill="y", pady=15, padx=5)
 
         rightFrame = ctk.CTkFrame(frame, width=500)
-        rightFrame.grid(row=0, column=1, sticky="nsew", padx=15, pady=15)
+        rightFrame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
         rightFrame.grid_rowconfigure((0, 1, 2, 3), weight=1)
         rightFrame.grid_columnconfigure(0, weight=1)
 
         topFrame = ctk.CTkFrame(
             rightFrame,
-            fg_color=f"#{int(Window.r_value):02x}{int(Window.g_value):02x}{int(Window.b_value):02x}",
             border_color="black",
             border_width=5,
         )
         topFrame.grid(row=0, rowspan=2, column=0, padx=15, pady=15)
+        rightFrame.grid_rowconfigure(1, weight=1)
+        rightFrame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
 
-        botFrame = ctk.CTkFrame(rightFrame)
+        leds = []
+        for i in range(5):
+            led = ctk.CTkFrame(
+                topFrame,
+                border_color="black",
+                border_width=5,
+                width=50,
+                height=50,
+                corner_radius=15,
+            )
+            led.grid(row=0, column=i, padx=10, pady=10)
+            leds.append(led)
+
+        botFrame = ctk.CTkFrame(rightFrame, border_color="black", border_width=5)
         botFrame.grid_rowconfigure((0, 1), weight=1)
         botFrame.grid_columnconfigure((0, 1, 2), weight=1)
         botFrame.grid(row=3, column=0, padx=15, pady=15)
@@ -567,11 +764,12 @@ class Window(ctk.CTk):
 
         speedSlider = ctk.CTkSlider(
             botFrame,
-            from_=0,
+            from_=1,
             to=100,
-            number_of_steps=100,
+            number_of_steps=99,
             command=lambda x: update_speed(),
         )
+
         speedSlider.grid(row=1, column=1)
         speedSlider.set(Window.speed)
 
