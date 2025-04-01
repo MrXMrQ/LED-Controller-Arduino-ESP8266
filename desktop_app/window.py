@@ -464,7 +464,8 @@ class Window(ctk.CTk):
 
         def reset_leds() -> None:
             for led in leds:
-                led.configure(led, fg_color="gray20")
+                if led.winfo_exists() and led.winfo_ismapped():
+                    led.configure(led, fg_color="gray20")
 
         def adjust_brightness(rgb: tuple, brightness) -> None:
             factor = brightness / 255
@@ -514,11 +515,12 @@ class Window(ctk.CTk):
                 if not self.running:
                     return
                 for i, led in enumerate(leds):
-                    led.configure(
-                        fg_color=adjust_brightness(
-                            colors[(index + i) % len(colors)], Window.brightness
+                    if led.winfo_exists():
+                        led.configure(
+                            fg_color=adjust_brightness(
+                                colors[(index + i) % len(colors)], Window.brightness
+                            )
                         )
-                    )
                 index = (index + 1) % len(colors)
                 self.animation_task = self.after(int(Window.speed), animate)
 
@@ -536,7 +538,8 @@ class Window(ctk.CTk):
                 if not self.running:
                     return
                 for led in leds:
-                    led.configure(fg_color=brightness_levels[index])
+                    if led.winfo_exists():
+                        led.configure(fg_color=brightness_levels[index])
                 index = (index + 1) % len(brightness_levels)
                 self.animation_task = self.after(int(Window.speed), animate)
 
@@ -550,12 +553,13 @@ class Window(ctk.CTk):
                 if not self.running:
                     return
                 reset_leds()
-                leds[index].configure(
-                    fg_color=adjust_brightness(
-                        (Window.r_value, Window.g_value, Window.b_value),
-                        Window.brightness,
+                if leds[index].winfo_exists():
+                    leds[index].configure(
+                        fg_color=adjust_brightness(
+                            (Window.r_value, Window.g_value, Window.b_value),
+                            Window.brightness,
+                        )
                     )
-                )
                 index = (index + 1) % len(leds)
                 self.animation_task = self.after(int(Window.speed), animate)
 
@@ -581,7 +585,8 @@ class Window(ctk.CTk):
                 )
 
                 for led in leds:
-                    led.configure(fg_color=colors[index])
+                    if led.winfo_exists():
+                        led.configure(fg_color=colors[index])
                 index = 1 - index
                 self.animation_task = self.after(int(Window.speed), animate)
 
@@ -594,12 +599,13 @@ class Window(ctk.CTk):
 
                 reset_leds()
                 led = random.choice(leds)
-                led.configure(
-                    fg_color=adjust_brightness(
-                        (Window.r_value, Window.g_value, Window.b_value),
-                        Window.brightness,
+                if led.winfo_exists():
+                    led.configure(
+                        fg_color=adjust_brightness(
+                            (Window.r_value, Window.g_value, Window.b_value),
+                            Window.brightness,
+                        )
                     )
-                )
                 self.after(
                     int(Window.speed) + 200, lambda: led.configure(fg_color="gray20")
                 )
@@ -619,13 +625,17 @@ class Window(ctk.CTk):
                     return
                 reset_leds()
                 led = random.choice(leds)
-                base_color = adjust_brightness(
-                    (Window.r_value, Window.g_value, Window.b_value),
-                    Window.brightness,
-                )
-                colors = generate_similar_colors(base_color, 6)
-                led.configure(fg_color=random.choice(colors))
-                self.after(int(Window.speed), lambda: led.configure(fg_color="gray20"))
+                if led.winfo_exists() and led.winfo_ismapped():
+                    base_color = adjust_brightness(
+                        (Window.r_value, Window.g_value, Window.b_value),
+                        Window.brightness,
+                    )
+                    colors = generate_similar_colors(base_color, 6)
+
+                    led.configure(fg_color=random.choice(colors))
+                    self.after(
+                        int(Window.speed), lambda: led.configure(fg_color="gray20")
+                    )
                 self.animation_task = self.after(random.randint(100, 400), animate)
 
             start_animation(animate)
