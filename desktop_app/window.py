@@ -29,24 +29,22 @@ class Window(ctk.CTk):
 
         self.title(title)
         self.geometry(f"{width}x{height}")
-        self.minsize(width, height)
-        self.maxsize(max_width, max_height)
+        self.resizable(False, False)
 
         # Configure grid layout
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=4)
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), weight=1)
         self.grid_columnconfigure(0, weight=1)
 
         # Initialize frames
         self.midFrame = self.initMidFrame()
-        self.midFrame.grid(row=1, column=0, sticky="nsew", padx=20, pady=3)
+        self.midFrame.grid(row=1, rowspan=9, column=0, sticky="nsew", padx=20, pady=3)
+        self.midFrame.pack_propagate(False)
 
         self.topFrame = self.initTopFrame()
         self.topFrame.grid(row=0, column=0, sticky="nsew", padx=20, pady=3)
 
         self.botFrame = self.initBotFrame()
-        self.botFrame.grid(row=2, column=0, sticky="nsew", padx=20, pady=3)
+        self.botFrame.grid(row=10, column=0, sticky="nsew", padx=20, pady=3)
 
         # Animation state
         self.running = False
@@ -115,7 +113,6 @@ class Window(ctk.CTk):
         """Initialize the middle frame that will contain tab content"""
         middleFrame = ctk.CTkFrame(
             master=self,
-            height=50,
             corner_radius=15,
             border_width=4,
             border_color="#2D315A",
@@ -169,21 +166,21 @@ class Window(ctk.CTk):
 
         return botFrame
 
-    def ledOnButtonClick(self):
+    def ledOnButtonClick(self) -> None:
         """Handle LED ON button click"""
         if self.option_menu.get() == "":
             return
 
         requests.post(f"{Window.url}{self.option_menu.get()}/ledOn")
 
-    def ledOffButtonClick(self):
+    def ledOffButtonClick(self) -> None:
         """Handle LED OFF button click"""
         if self.option_menu.get() == "":
             return
 
         requests.post(f"{Window.url}{self.option_menu.get()}/ledOff")
 
-    def pushButtonClick(self):
+    def pushButtonClick(self) -> None:
         """Push current color settings to device"""
         if self.option_menu.get() == "":
             return
@@ -199,7 +196,7 @@ class Window(ctk.CTk):
 
         requests.post(f"{Window.url}{self.option_menu.get()}/setColor", json=payload)
 
-    def fillOptions(self):
+    def fillOptions(self) -> list:
         """Get connected device IPs"""
         try:
             ips = IPScanner()
@@ -208,7 +205,7 @@ class Window(ctk.CTk):
         except Exception:
             return [""]
 
-    def initScanTab(self):
+    def initScanTab(self) -> ctk.CTkFrame:
         """Initialize the scan tab for finding devices"""
 
         def scan_devices():
@@ -226,7 +223,7 @@ class Window(ctk.CTk):
                     self.option_menu.configure(values=current_options)
                 self.option_menu.set(ip)
 
-        frame = ctk.CTkFrame(self.midFrame, height=50)
+        frame = ctk.CTkFrame(self.midFrame)
         frame.grid_rowconfigure((0, 1), weight=1)
         frame.grid_columnconfigure(0, weight=1)
 
@@ -259,16 +256,16 @@ class Window(ctk.CTk):
 
         return frame
 
-    def initColorTab(self):
+    def initColorTab(self) -> ctk.CTkFrame:
         """Initialize the color selection tab"""
 
-        def update(r, g, b):
+        def update(r, g, b) -> None:
             """Update the color values"""
             Window.r_value = int(r)
             Window.g_value = int(g)
             Window.b_value = int(b)
 
-        def update_color():
+        def update_color() -> None:
             """Update all color UI elements"""
             r_value = r_slider.get()
             g_value = g_slider.get()
@@ -294,11 +291,11 @@ class Window(ctk.CTk):
                 fg_color=f"#{int(r_value):02x}{int(g_value):02x}{int(b_value):02x}",
             )
 
-        def update_brightness():
+        def update_brightness() -> None:
             """Update brightness value"""
             Window.brightness = int(brightness_slider.get())
 
-        def update_from_hex(event=None):
+        def update_from_hex(event=None) -> None:
             """Update color from hex input"""
             hex_value = hex_entry.get()
 
@@ -327,7 +324,7 @@ class Window(ctk.CTk):
                 except ValueError:
                     pass
 
-        def update_from_rgb(event=None):
+        def update_from_rgb(event=None) -> None:
             """Update color from RGB inputs"""
             try:
                 r_value = int(r_entry.get())
@@ -351,7 +348,7 @@ class Window(ctk.CTk):
             except ValueError:
                 pass
 
-        frame = ctk.CTkFrame(self.midFrame, height=50)
+        frame = ctk.CTkFrame(self.midFrame)
         frame.grid_rowconfigure((0, 1), weight=1)
         frame.grid_columnconfigure((0, 1), weight=1)
 
@@ -731,6 +728,9 @@ class Window(ctk.CTk):
             """Update animation speed"""
             Window.speed = speedSlider.get()
 
+        def temp():
+            pass
+
         def on_mousewheel(event):
             """Handle scrolling in animation list"""
             if canvas.winfo_exists() and canvas.winfo_ismapped():
@@ -742,7 +742,7 @@ class Window(ctk.CTk):
                 window, width=event.width - scrollbar.winfo_width() - 60
             )
 
-        frame = ctk.CTkFrame(self.midFrame, height=50)
+        frame = ctk.CTkFrame(self.midFrame)
         frame.grid_rowconfigure(0, weight=1)
         frame.grid_columnconfigure((0, 1), weight=1)
 
@@ -780,6 +780,11 @@ class Window(ctk.CTk):
             ("⚡ Strobe", start_strobe),
             ("🌧️ Raindrop", start_raindrop),
             ("🔥 Fireplace", start_fireplace),
+            ("1", temp),
+            ("2", temp),
+            ("3", temp),
+            ("4", temp),
+            ("5", temp),
         ]
 
         self.animationButtons = []
@@ -794,8 +799,8 @@ class Window(ctk.CTk):
         canvas.bind_all("<MouseWheel>", on_mousewheel)
         leftFrame.bind("<Configure>", resizeButton)
 
-        canvas.pack(side="left", fill="both", expand=True, pady=10, padx=20)
-        scrollbar.pack(side="right", fill="y", pady=15, padx=5)
+        canvas.pack(side="right", fill="both", expand=True, pady=10, padx=20)
+        scrollbar.pack(side="left", fill="y", pady=15, padx=5)
 
         # Preview and controls panel
         rightFrame = ctk.CTkFrame(
