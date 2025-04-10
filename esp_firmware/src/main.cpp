@@ -83,6 +83,10 @@ void responseESP() {
     server.send(200, "text/plain", "webserver online");    
 }
 
+void get_mac() {
+    server.send(200, "text/plain", WiFi.macAddress());
+}
+
 /**
  * @brief Handles unknown web requests.
  */
@@ -239,6 +243,8 @@ void startAnimation(int animationIndex) {
     server.send(200, "text/plain", "Animation started!");
 }
 
+
+
 void setup() {
     Serial.begin(115200);
     Serial.println("Connecting to Wi-Fi...");
@@ -261,6 +267,7 @@ void setup() {
     server.on("/ledOff", ledOff);
     server.on("/esp8266", responseESP);
     server.on("/stop", stopAnimation);
+    server.on("/mac", get_mac);
     server.onNotFound(notFound);
 
     server.on("/runningLights", HTTP_POST, []() { if (extractArguments()) startAnimation(0); });
