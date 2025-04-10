@@ -1,6 +1,6 @@
 import random
 import customtkinter as ctk
-from ipScanner import IPScanner
+from arduinoManager import ArduinoManager
 import requests
 
 
@@ -34,6 +34,8 @@ class Window(ctk.CTk):
         # Configure grid layout
         self.grid_rowconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), weight=1)
         self.grid_columnconfigure(0, weight=1)
+
+        self._manager = ArduinoManager()
 
         # Initialize frames
         self.midFrame = self.initMidFrame()
@@ -134,8 +136,10 @@ class Window(ctk.CTk):
         botFrame.grid_columnconfigure((0, 1, 2, 3), weight=1)
         botFrame.grid_rowconfigure(0, weight=1)
 
-        # Device selection dropdown
-        options = [""]  # self.fillOptions()
+        self._build_device_map()
+        options = list(self.device_map.keys())
+        default_value = options[0] if options else "No devices"
+
         self.option_menu = ctk.CTkOptionMenu(
             botFrame,
             values=options,
@@ -148,6 +152,7 @@ class Window(ctk.CTk):
             button_hover_color="#6D72A3",
             dropdown_fg_color="#8387C4",
             dropdown_text_color="white",
+            variable=ctk.StringVar(value=default_value),
         )
         self.option_menu.grid(row=0, column=0, pady=5, padx=10, sticky="ew")
 
@@ -166,6 +171,55 @@ class Window(ctk.CTk):
 
         return botFrame
 
+    def _build_device_map(self):
+        """
+        Build a mapping from display names to device objects.
+        Handles duplicate names by adding unique identifiers.
+        """
+        self.device_map = {}
+        name_counts = {}
+
+        for device in self._manager.devices:
+            if device():
+                name = device.name
+
+                # Handle duplicate names by adding MAC address suffix
+                if name in self.device_map:
+                    # If this is the first duplicate, rename the original
+                    if name_counts.get(name, 0) == 0:
+                        original_device = self.device_map[name]
+                        short_mac = self._get_short_mac(original_device.mac_address)
+                        new_key = f"{name} ({short_mac})"
+                        self.device_map[new_key] = original_device
+                        del self.device_map[name]
+
+                    # Count this name
+                    name_counts[name] = name_counts.get(name, 0) + 1
+
+                    # Add this device with MAC suffix
+                    short_mac = self._get_short_mac(device.mac_address)
+                    key = f"{name} ({short_mac})"
+                    self.device_map[key] = device
+                else:
+                    # First occurrence of this name
+                    self.device_map[name] = device
+                    name_counts[name] = 0
+
+    def _get_short_mac(self, mac_address: str) -> str:
+        """
+        Get shortened version of MAC address for display
+
+        Args:
+            mac_address: Full MAC address
+
+        Returns:
+            Last 6 characters of MAC address
+        """
+        if not mac_address or mac_address == "Unknown":
+            return "Unknown"
+        # Return last 6 chars of MAC address
+        return mac_address[-6:].upper()
+
     def ledOnButtonClick(self) -> None:
         """Handle LED ON button click"""
         if self.option_menu.get() == "":
@@ -182,46 +236,17 @@ class Window(ctk.CTk):
 
     def pushButtonClick(self) -> None:
         """Push current color settings to device"""
-        if self.option_menu.get() == "":
-            return
-
-        # Prepare data for sending
-        payload = {
-            "r": Window.r_value,
-            "g": Window.g_value,
-            "b": Window.b_value,
-            "brightness": Window.brightness,
-            "speed": Window.speed,
-        }
-
-        requests.post(f"{Window.url}{self.option_menu.get()}/setColor", json=payload)
-
-    def fillOptions(self) -> list:
-        """Get connected device IPs"""
-        try:
-            ips = IPScanner()
-            devices = ips.get_devices()
-            return devices if devices else [""]
-        except Exception:
-            return [""]
+        print(self.device_map[self.option_menu.get()].to_dict())
 
     def initScanTab(self) -> ctk.CTkFrame:
         """Initialize the scan tab for finding devices"""
 
         def scan_devices():
-            """Scan for available devices and update dropdown"""
-            devices = self.fillOptions()
-            self.option_menu.configure(values=devices)
+            pass
 
         def search_device(event=None):
             """Search for a specific device IP"""
-            ip = scan_entry.get().strip()
-            if ip:
-                current_options = list(self.option_menu._values)
-                if ip not in current_options:
-                    current_options.append(ip)
-                    self.option_menu.configure(values=current_options)
-                self.option_menu.set(ip)
+            pass
 
         frame = ctk.CTkFrame(self.midFrame)
         frame.grid_rowconfigure((0, 1), weight=1)

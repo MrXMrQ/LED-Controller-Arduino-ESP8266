@@ -268,12 +268,3 @@ class ArduinoManager:
             List of Arduino objects
         """
         return self._devices.copy()
-
-
-manager = ArduinoManager()
-new_device = Arduino("Test Device", "192.168.1.100", "AA:BB:CC:DD:EE:FF", True)
-if manager.add_device(new_device):
-    print(f"Added device: {new_device.name}")
-
-for device in manager.devices:
-    print(f"Device: {device.name}, Status: {'Online' if device() else 'Offline'}")
