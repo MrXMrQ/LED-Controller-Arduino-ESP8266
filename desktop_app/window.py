@@ -1,13 +1,12 @@
 import random
 from textwrap import fill
+from turtle import speed
 import customtkinter as ctk
 from arduinoManager import ArduinoManager
 import requests
-from tkinter import messagebox
 
 
 class Window(ctk.CTk):
-    url = "http://"
     button_options = {
         "corner_radius": 7,
         "height": 50,
@@ -25,6 +24,8 @@ class Window(ctk.CTk):
     b_value = 255
     brightness = 255
     speed = 50
+    command = "ledOn"
+    last_command = ""
 
     def __init__(self, title, width, height, max_width, max_height):
         super().__init__()
@@ -224,21 +225,47 @@ class Window(ctk.CTk):
 
     def ledOnButtonClick(self) -> None:
         """Handle LED ON button click"""
-        if self.option_menu.get() == "":
-            return
-
-        requests.post(f"{Window.url}{self.option_menu.get()}/ledOn")
+        if self.option_menu.get() in self.device_map.keys():
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
+            if arduino_as_dict["status"] and Window.last_command != "":
+                url = Window.last_command
+                self.post(url)
 
     def ledOffButtonClick(self) -> None:
         """Handle LED OFF button click"""
-        if self.option_menu.get() == "":
-            return
-
-        requests.post(f"{Window.url}{self.option_menu.get()}/ledOff")
+        if self.option_menu.get() in self.device_map.keys():
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
+            if arduino_as_dict["status"]:
+                url = f"http://{arduino_as_dict["ip_address"]}/ledOff"
+                self.post(url)
 
     def pushButtonClick(self) -> None:
         """Push current color settings to device"""
-        print(self.device_map[self.option_menu.get()].to_dict())
+        if self.option_menu.get() in self.device_map.keys():
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
+            if arduino_as_dict["status"]:
+                r = Window.r_value
+                g = Window.g_value
+                b = Window.b_value
+                brightness = Window.brightness
+                speed = Window.speed
+
+                url = f"http://{arduino_as_dict["ip_address"]}/{Window.command}?r={r}&g={g}&b={b}&br={brightness}&d={speed}"
+                Window.last_command = url
+                self.post(url)
+
+    def post(self, url: str) -> None:
+        print(url)
+        try:
+            response = requests.post(url)
+
+            if response.status_code == 200:
+                print(response.text)
+                return
+
+            print(f"FAIL: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"connection failure: {e}")
 
     def initScanTab(self) -> ctk.CTkFrame:
         """Initialize the scan tab for finding devices"""
@@ -283,9 +310,6 @@ class Window(ctk.CTk):
                 popup, text="Submit", command=on_submit, **Window.button_options
             )
             submit_button.pack(pady=10)
-
-        def delete_arduino() -> None:
-            print("DELETE")
 
         def on_mousewheel(event) -> None:
             """Handle scrolling in animation list"""
@@ -341,7 +365,7 @@ class Window(ctk.CTk):
                 border_width=border_width,
             )
             arduino_frame.grid_rowconfigure(0, weight=1, minsize=200)
-            arduino_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+            arduino_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
             arduino_frame.pack(fill="x", padx=5, pady=5)
 
             name_frame = ctk.CTkFrame(
@@ -416,21 +440,6 @@ class Window(ctk.CTk):
             )
             status_display.grid(row=0, column=1, padx=(5, 0))
             status_frame.grid(row=0, column=3, sticky="nsew", pady=10)
-
-            delete_frame = ctk.CTkFrame(
-                arduino_frame, fg_color=arduino_frame.cget("fg_color")
-            )
-            delete_frame.grid(
-                row=0, column=4, sticky="nsew", pady=10, padx=(0, border_width)
-            )
-
-            delete_button = ctk.CTkButton(
-                master=delete_frame,
-                text="delete",
-                command=delete_arduino,
-                **Window.button_options,
-            )
-            delete_button.pack(fill="x", expand=True, padx=20)
 
         canvas.bind_all("<MouseWheel>", on_mousewheel)
         canvas_frame.bind("<Configure>", resizeButton)
@@ -537,6 +546,8 @@ class Window(ctk.CTk):
         frame = ctk.CTkFrame(self.midFrame)
         frame.grid_rowconfigure((0, 1), weight=1)
         frame.grid_columnconfigure((0, 1), weight=1)
+
+        Window.command = "ledOn"
 
         # RGB sliders and inputs
         leftTopFrame = ctk.CTkFrame(master=frame, border_color="black", border_width=4)
@@ -737,6 +748,8 @@ class Window(ctk.CTk):
                 (139, 0, 255),
             ]
 
+            Window.command = "rainbow"
+
             index = 0
 
             def animate():
@@ -760,6 +773,7 @@ class Window(ctk.CTk):
             # Get base RGB values from the class
             base_r, base_g, base_b = Window.r_value, Window.g_value, Window.b_value
             max_brightness = Window.brightness
+            Window.command = "pulse"
 
             # Calculate brightness steps
             min_brightness = 50  # Minimum brightness level
@@ -815,6 +829,8 @@ class Window(ctk.CTk):
             """Chasing light animation"""
             index = 0
 
+            Window.command = "chasing"
+
             def animate():
                 nonlocal index
                 if not self.running:
@@ -842,6 +858,8 @@ class Window(ctk.CTk):
             ]
             index = 0
 
+            Window.command = "strobe"
+
             def animate():
                 nonlocal index
                 if not self.running:
@@ -862,6 +880,8 @@ class Window(ctk.CTk):
 
         def start_raindrop():
             """Raindrop animation"""
+
+            Window.command = "raindrop"
 
             def animate():
                 if not self.running:
@@ -885,6 +905,8 @@ class Window(ctk.CTk):
 
         def start_fireplace():
             """Fireplace animation"""
+
+            Window.command = "fireplace"
 
             def animate():
                 if not self.running:
