@@ -3,6 +3,7 @@ from textwrap import fill
 import customtkinter as ctk
 from arduinoManager import ArduinoManager
 import requests
+from tkinter import messagebox
 
 
 class Window(ctk.CTk):
@@ -242,8 +243,46 @@ class Window(ctk.CTk):
     def initScanTab(self) -> ctk.CTkFrame:
         """Initialize the scan tab for finding devices"""
 
-        def edit_name() -> None:
-            print("EDIT")
+        def edit_name(arduino, label_to_change) -> None:
+            popup = ctk.CTkToplevel(self)
+            popup.title("EDIT")
+            popup.geometry("200x200")
+            popup.resizable(False, False)
+            popup.grab_set()
+
+            label = ctk.CTkLabel(popup, text="Enter new Arduino name")
+            label.pack(pady=10)
+
+            entry = ctk.CTkEntry(popup)
+            entry.pack(pady=10)
+
+            def on_submit() -> None:
+                user_input = entry.get()
+
+                if user_input:
+                    popup.destroy()
+
+                    for i in self._manager.devices:
+                        if i == arduino:
+                            i.name = user_input
+
+                    self._manager._save_to_file(self._manager.devices)
+                    label_to_change.configure(text=user_input)
+
+                    self._build_device_map()
+                    options_list = list(self.device_map.keys())
+                    print(options_list)
+                    default_value = options_list[0] if options_list else "No devices"
+
+                    self.option_menu.configure(
+                        values=options_list,
+                        variable=ctk.StringVar(value=default_value),
+                    )
+
+            submit_button = ctk.CTkButton(
+                popup, text="Submit", command=on_submit, **Window.button_options
+            )
+            submit_button.pack(pady=10)
 
         def delete_arduino() -> None:
             print("DELETE")
@@ -319,7 +358,12 @@ class Window(ctk.CTk):
             name_label.grid(row=0, column=0, padx=10)
 
             edit_button = ctk.CTkButton(
-                name_frame, text="edit", command=edit_name, **Window.button_options
+                name_frame,
+                text="edit",
+                command=lambda arduino=arduino, label=name_label: edit_name(
+                    arduino, label
+                ),
+                **Window.button_options,
             )
             edit_button.grid(row=0, column=1)
             name_frame.grid(
