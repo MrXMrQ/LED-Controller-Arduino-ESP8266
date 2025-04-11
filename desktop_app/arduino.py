@@ -48,7 +48,7 @@ class Arduino:
 
         url = f"http://{self._ip_address}{'/esp8266'}"
         try:
-            response = requests.get(url, timeout=2)
+            response = requests.get(url, timeout=0.2)
             if response.status_code == 200:
                 return True
         except requests.RequestException:
