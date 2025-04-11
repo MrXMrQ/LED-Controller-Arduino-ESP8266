@@ -104,22 +104,16 @@ class IPScanner:
         Returns:
             Arduino object if detected, None otherwise
         """
-        # Check if ESP8266 endpoint exists
-        try:
-            response = requests.get(f"http://{ip}/esp8266", timeout=1.5)
-            if response.status_code != 200:
-                return None
-        except requests.RequestException:
-            return None
-
-        # Get MAC address
+        # Get MAC address and check if endpoint exists
         mac_address = "Unknown"
         try:
             response = requests.get(f"http://{ip}/mac", timeout=1.5)
             if response.status_code == 200:
                 mac_address = response.text.strip()
+            else:
+                return None
         except requests.RequestException:
-            pass
+            return None
 
         # Create and return Arduino object
         return Arduino("Arduino", ip, mac_address, True)

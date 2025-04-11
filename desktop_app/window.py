@@ -1,11 +1,12 @@
 import random
+from textwrap import fill
+from turtle import speed
 import customtkinter as ctk
 from arduinoManager import ArduinoManager
 import requests
 
 
 class Window(ctk.CTk):
-    url = "http://"
     button_options = {
         "corner_radius": 7,
         "height": 50,
@@ -18,11 +19,13 @@ class Window(ctk.CTk):
     }
 
     # Default color and animation settings
-    r_value = 255
-    g_value = 0
-    b_value = 255
-    brightness = 255
-    speed = 50
+    r_value = 100
+    g_value = 100
+    b_value = 100
+    brightness = 50
+    speed = 25
+    command = "ledOn"
+    last_command = ""
 
     def __init__(self, title, width, height, max_width, max_height):
         super().__init__()
@@ -222,62 +225,229 @@ class Window(ctk.CTk):
 
     def ledOnButtonClick(self) -> None:
         """Handle LED ON button click"""
-        if self.option_menu.get() == "":
-            return
-
-        requests.post(f"{Window.url}{self.option_menu.get()}/ledOn")
+        if self.option_menu.get() in self.device_map.keys():
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
+            if arduino_as_dict["status"] and Window.last_command != "":
+                url = Window.last_command
+                self.post(url)
 
     def ledOffButtonClick(self) -> None:
         """Handle LED OFF button click"""
-        if self.option_menu.get() == "":
-            return
-
-        requests.post(f"{Window.url}{self.option_menu.get()}/ledOff")
+        if self.option_menu.get() in self.device_map.keys():
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
+            if arduino_as_dict["status"]:
+                url = f"http://{arduino_as_dict["ip_address"]}/ledOff"
+                self.post(url)
 
     def pushButtonClick(self) -> None:
         """Push current color settings to device"""
-        print(self.device_map[self.option_menu.get()].to_dict())
+        if self.option_menu.get() in self.device_map.keys():
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
+            if arduino_as_dict["status"]:
+                r = Window.r_value
+                g = Window.g_value
+                b = Window.b_value
+                brightness = Window.brightness
+                speed = Window.speed
+
+                url = f"http://{arduino_as_dict["ip_address"]}/{Window.command}?r={r}&g={g}&b={b}&br={brightness}&d={speed}"
+                Window.last_command = url
+                self.post(url)
+
+    def post(self, url: str) -> None:
+        print(url)
+        try:
+            response = requests.post(url)
+
+            if response.status_code in (200, 204):
+                print(response.text)
+                return
+
+            print(f"FAIL: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"connection failure: {e}")
 
     def initScanTab(self) -> ctk.CTkFrame:
         """Initialize the scan tab for finding devices"""
 
-        def scan_devices():
-            pass
+        def edit_name(arduino, label_to_change) -> None:
+            popup = ctk.CTkToplevel(self)
+            popup.title("EDIT")
+            popup.geometry("200x200")
+            popup.resizable(False, False)
+            popup.grab_set()
 
-        def search_device(event=None):
-            """Search for a specific device IP"""
-            pass
+            label = ctk.CTkLabel(popup, text="Enter new Arduino name")
+            label.pack(pady=10)
 
-        frame = ctk.CTkFrame(self.midFrame)
-        frame.grid_rowconfigure((0, 1), weight=1)
+            entry = ctk.CTkEntry(popup)
+            entry.pack(pady=10)
+
+            def on_submit() -> None:
+                user_input = entry.get()
+
+                if user_input:
+                    popup.destroy()
+
+                    for i in self._manager.devices:
+                        if i == arduino:
+                            i.name = user_input
+
+                    self._manager._save_to_file(self._manager.devices)
+                    label_to_change.configure(text=user_input)
+
+                    self._build_device_map()
+                    options_list = list(self.device_map.keys())
+                    print(options_list)
+                    default_value = options_list[0] if options_list else "No devices"
+
+                    self.option_menu.configure(
+                        values=options_list,
+                        variable=ctk.StringVar(value=default_value),
+                    )
+
+            submit_button = ctk.CTkButton(
+                popup, text="Submit", command=on_submit, **Window.button_options
+            )
+            submit_button.pack(pady=10)
+
+        def on_mousewheel(event) -> None:
+            """Handle scrolling in animation list"""
+            if canvas.winfo_exists() and canvas.winfo_ismapped():
+                canvas.yview_scroll(-1 * (event.delta // 120), "units")
+
+        def resizeButton(event) -> None:
+            """Resize the animation buttons canvas"""
+            canvas.itemconfigure(
+                window, width=event.width - scrollbar.winfo_width() - 60
+            )
+
+        frame = ctk.CTkFrame(self.midFrame, fg_color="gray20")
+        frame.grid_rowconfigure(0, weight=1)
         frame.grid_columnconfigure(0, weight=1)
 
-        # Search section
-        topFrame = ctk.CTkFrame(frame, corner_radius=15, fg_color="#3A3E6D")
-        topFrame.grid(row=0, column=0, padx=15, sticky="nsew")
-
-        topFrame.grid_rowconfigure((0, 1), weight=1)
-        topFrame.grid_columnconfigure((0, 1, 2, 3), weight=1)
-
-        # Manual IP entry
-        scan_entry = ctk.CTkEntry(topFrame, placeholder_text="Enter IP Address")
-        scan_entry.grid(row=0, column=1, columnspan=2, sticky="ew", pady=10)
-        scan_entry.bind("<Return>", search_device)
-
-        search_btn = ctk.CTkButton(
-            topFrame, text="Add IP", command=search_device, **Window.button_options
+        canvas_frame = ctk.CTkFrame(
+            frame,
+            corner_radius=15,
+            fg_color="gray20",
+            border_color="black",
+            border_width=5,
         )
-        search_btn.grid(row=0, column=3, sticky="ew", pady=10, padx=5)
+        canvas_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        # Auto scan button
-        scanButton = ctk.CTkButton(
-            topFrame, text="SCAN NETWORK", command=scan_devices, **Window.button_options
+        canvas = ctk.CTkCanvas(
+            canvas_frame, highlightthickness=0, bg=canvas_frame.cget("fg_color")
         )
-        scanButton.grid(row=1, column=1, columnspan=2, sticky="ew", pady=10)
+        scrollbar = ctk.CTkScrollbar(
+            canvas_frame, orientation="vertical", command=canvas.yview
+        )
 
-        # Results section
-        botFrame = ctk.CTkFrame(frame, corner_radius=15, fg_color="#3A3E6D")
-        botFrame.grid(row=1, column=0, padx=15, sticky="nsew")
+        content_frame = ctk.CTkFrame(canvas, fg_color=canvas_frame.cget("fg_color"))
+        content_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
+        )
+
+        window = canvas.create_window((0, 0), window=content_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        for arduino in self._manager.devices:
+            arduino_as_dict = arduino.to_dict()
+
+            border_width = 4
+
+            arduino_frame = ctk.CTkFrame(
+                content_frame,
+                fg_color="gray18",
+                corner_radius=15,
+                height=200,
+                border_color="black",
+                border_width=border_width,
+            )
+            arduino_frame.grid_rowconfigure(0, weight=1, minsize=200)
+            arduino_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
+            arduino_frame.pack(fill="x", padx=5, pady=5)
+
+            name_frame = ctk.CTkFrame(
+                arduino_frame, fg_color=arduino_frame.cget("fg_color")
+            )
+            name_frame.grid_rowconfigure(0, weight=1)
+            name_frame.grid_columnconfigure((0, 1), weight=1)
+
+            name_label = ctk.CTkLabel(
+                name_frame,
+                text=arduino_as_dict["name"],
+                font=("Inter", 20, "bold"),
+            )
+            name_label.grid(row=0, column=0, padx=10)
+
+            edit_button = ctk.CTkButton(
+                name_frame,
+                text="edit",
+                command=lambda arduino=arduino, label=name_label: edit_name(
+                    arduino, label
+                ),
+                **Window.button_options,
+            )
+            edit_button.grid(row=0, column=1)
+            name_frame.grid(
+                row=0, column=0, sticky="nsew", pady=10, padx=(border_width, 0)
+            )
+
+            ip_frame = ctk.CTkFrame(
+                arduino_frame, fg_color=arduino_frame.cget("fg_color")
+            )
+            ip_frame.grid(row=0, column=1, sticky="nsew", pady=10)
+
+            ip_label = ctk.CTkLabel(
+                ip_frame, text=arduino_as_dict["ip_address"], font=("Inter", 20, "bold")
+            )
+            ip_label.pack(fill="both", expand=True, padx=10)
+
+            mac_frame = ctk.CTkFrame(
+                arduino_frame, fg_color=arduino_frame.cget("fg_color")
+            )
+            mac_frame.grid(row=0, column=2, sticky="nsew", pady=10)
+
+            mac_label = ctk.CTkLabel(
+                mac_frame,
+                text=arduino_as_dict["mac_address"],
+                font=("Inter", 20, "bold"),
+            )
+            mac_label.pack(fill="both", expand=True)
+
+            status_frame = ctk.CTkFrame(
+                arduino_frame, fg_color=arduino_frame.cget("fg_color")
+            )
+            status_frame.grid_rowconfigure(0, weight=1)
+            status_frame.grid_columnconfigure((0, 1), weight=1)
+
+            status_label = ctk.CTkLabel(
+                status_frame,
+                text="Online" if arduino_as_dict["status"] else "Offline",
+                font=("Inter", 20, "bold"),
+            )
+            status_label.grid(row=0, column=0)
+
+            status_display = ctk.CTkFrame(
+                status_frame,
+                fg_color="green" if arduino_as_dict["status"] else "red",
+                corner_radius=15,
+                border_color="black",
+                border_width=4,
+                width=50,
+                height=50,
+            )
+            status_display.grid(row=0, column=1, padx=(5, 0))
+            status_frame.grid(row=0, column=3, sticky="nsew", pady=10)
+
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+        canvas_frame.bind("<Configure>", resizeButton)
+
+        canvas.pack(side="right", fill="both", expand=True, pady=10, padx=10)
+        scrollbar.pack(side="left", fill="y", pady=15, padx=5)
+
+        canvas_frame.grid(row=0, column=0, padx=10, pady=10)
 
         return frame
 
@@ -376,6 +546,8 @@ class Window(ctk.CTk):
         frame = ctk.CTkFrame(self.midFrame)
         frame.grid_rowconfigure((0, 1), weight=1)
         frame.grid_columnconfigure((0, 1), weight=1)
+
+        Window.command = "ledOn"
 
         # RGB sliders and inputs
         leftTopFrame = ctk.CTkFrame(master=frame, border_color="black", border_width=4)
@@ -576,6 +748,8 @@ class Window(ctk.CTk):
                 (139, 0, 255),
             ]
 
+            Window.command = "rainbow"
+
             index = 0
 
             def animate():
@@ -599,6 +773,7 @@ class Window(ctk.CTk):
             # Get base RGB values from the class
             base_r, base_g, base_b = Window.r_value, Window.g_value, Window.b_value
             max_brightness = Window.brightness
+            Window.command = "pulse"
 
             # Calculate brightness steps
             min_brightness = 50  # Minimum brightness level
@@ -654,6 +829,8 @@ class Window(ctk.CTk):
             """Chasing light animation"""
             index = 0
 
+            Window.command = "chasing"
+
             def animate():
                 nonlocal index
                 if not self.running:
@@ -681,6 +858,8 @@ class Window(ctk.CTk):
             ]
             index = 0
 
+            Window.command = "strobe"
+
             def animate():
                 nonlocal index
                 if not self.running:
@@ -701,6 +880,8 @@ class Window(ctk.CTk):
 
         def start_raindrop():
             """Raindrop animation"""
+
+            Window.command = "raindrop"
 
             def animate():
                 if not self.running:
@@ -724,6 +905,8 @@ class Window(ctk.CTk):
 
         def start_fireplace():
             """Fireplace animation"""
+
+            Window.command = "fireplace"
 
             def animate():
                 if not self.running:

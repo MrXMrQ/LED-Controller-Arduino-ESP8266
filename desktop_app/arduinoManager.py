@@ -43,7 +43,7 @@ class ArduinoManager:
                 scanned_devices = self._ip_scanner.get_devices()
                 self._update_device_information(loaded_devices, scanned_devices)
             else:
-                self._devices = []
+                self._save_to_file(self._ip_scanner.get_devices())
         except (json.JSONDecodeError, IOError) as e:
             print(f"Error loading Arduino data: {e}")
             self._devices = []
@@ -67,7 +67,7 @@ class ArduinoManager:
             # Update internal device list
             self._devices = (
                 self._convert_from_dict(save_data)
-                if isinstance(save_data[0], dict)
+                if save_data and isinstance(save_data[0], dict)
                 else data
             )
         except IOError as e:
@@ -101,6 +101,7 @@ class ArduinoManager:
             loaded_devices: List of Arduino objects loaded from file
             scanned_devices: List of Arduino objects from network scan
         """
+
         # Update IP addresses for existing devices
         for loaded_device in loaded_devices:
             for scanned_device in scanned_devices:
