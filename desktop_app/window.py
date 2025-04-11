@@ -1,4 +1,5 @@
 import random
+from textwrap import fill
 import customtkinter as ctk
 from arduinoManager import ArduinoManager
 import requests
@@ -241,43 +242,159 @@ class Window(ctk.CTk):
     def initScanTab(self) -> ctk.CTkFrame:
         """Initialize the scan tab for finding devices"""
 
-        def scan_devices():
-            pass
+        def edit_name() -> None:
+            print("EDIT")
 
-        def search_device(event=None):
-            """Search for a specific device IP"""
-            pass
+        def delete_arduino() -> None:
+            print("DELETE")
 
-        frame = ctk.CTkFrame(self.midFrame)
-        frame.grid_rowconfigure((0, 1), weight=1)
+        def on_mousewheel(event) -> None:
+            """Handle scrolling in animation list"""
+            if canvas.winfo_exists() and canvas.winfo_ismapped():
+                canvas.yview_scroll(-1 * (event.delta // 120), "units")
+
+        def resizeButton(event) -> None:
+            """Resize the animation buttons canvas"""
+            canvas.itemconfigure(
+                window, width=event.width - scrollbar.winfo_width() - 60
+            )
+
+        frame = ctk.CTkFrame(self.midFrame, fg_color="gray20")
+        frame.grid_rowconfigure(0, weight=1)
         frame.grid_columnconfigure(0, weight=1)
 
-        # Search section
-        topFrame = ctk.CTkFrame(frame, corner_radius=15, fg_color="#3A3E6D")
-        topFrame.grid(row=0, column=0, padx=15, sticky="nsew")
-
-        topFrame.grid_rowconfigure((0, 1), weight=1)
-        topFrame.grid_columnconfigure((0, 1, 2, 3), weight=1)
-
-        # Manual IP entry
-        scan_entry = ctk.CTkEntry(topFrame, placeholder_text="Enter IP Address")
-        scan_entry.grid(row=0, column=1, columnspan=2, sticky="ew", pady=10)
-        scan_entry.bind("<Return>", search_device)
-
-        search_btn = ctk.CTkButton(
-            topFrame, text="Add IP", command=search_device, **Window.button_options
+        canvas_frame = ctk.CTkFrame(
+            frame,
+            corner_radius=15,
+            fg_color="gray20",
+            border_color="black",
+            border_width=5,
         )
-        search_btn.grid(row=0, column=3, sticky="ew", pady=10, padx=5)
+        canvas_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        # Auto scan button
-        scanButton = ctk.CTkButton(
-            topFrame, text="SCAN NETWORK", command=scan_devices, **Window.button_options
+        canvas = ctk.CTkCanvas(
+            canvas_frame, highlightthickness=0, bg=canvas_frame.cget("fg_color")
         )
-        scanButton.grid(row=1, column=1, columnspan=2, sticky="ew", pady=10)
+        scrollbar = ctk.CTkScrollbar(
+            canvas_frame, orientation="vertical", command=canvas.yview
+        )
 
-        # Results section
-        botFrame = ctk.CTkFrame(frame, corner_radius=15, fg_color="#3A3E6D")
-        botFrame.grid(row=1, column=0, padx=15, sticky="nsew")
+        content_frame = ctk.CTkFrame(canvas, fg_color=canvas_frame.cget("fg_color"))
+        content_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
+        )
+
+        window = canvas.create_window((0, 0), window=content_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        for arduino in self._manager.devices:
+            arduino_as_dict = arduino.to_dict()
+
+            border_width = 4
+
+            arduino_frame = ctk.CTkFrame(
+                content_frame,
+                fg_color="gray18",
+                corner_radius=15,
+                height=200,
+                border_color="black",
+                border_width=border_width,
+            )
+            arduino_frame.grid_rowconfigure(0, weight=1, minsize=200)
+            arduino_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+            arduino_frame.pack(fill="x", padx=5, pady=5)
+
+            name_frame = ctk.CTkFrame(
+                arduino_frame, fg_color=arduino_frame.cget("fg_color")
+            )
+            name_frame.grid_rowconfigure(0, weight=1)
+            name_frame.grid_columnconfigure((0, 1), weight=1)
+
+            name_label = ctk.CTkLabel(
+                name_frame,
+                text=arduino_as_dict["name"],
+                font=("Inter", 20, "bold"),
+            )
+            name_label.grid(row=0, column=0, padx=10)
+
+            edit_button = ctk.CTkButton(
+                name_frame, text="edit", command=edit_name, **Window.button_options
+            )
+            edit_button.grid(row=0, column=1)
+            name_frame.grid(
+                row=0, column=0, sticky="nsew", pady=10, padx=(border_width, 0)
+            )
+
+            ip_frame = ctk.CTkFrame(
+                arduino_frame, fg_color=arduino_frame.cget("fg_color")
+            )
+            ip_frame.grid(row=0, column=1, sticky="nsew", pady=10)
+
+            ip_label = ctk.CTkLabel(
+                ip_frame, text=arduino_as_dict["ip_address"], font=("Inter", 20, "bold")
+            )
+            ip_label.pack(fill="both", expand=True, padx=10)
+
+            mac_frame = ctk.CTkFrame(
+                arduino_frame, fg_color=arduino_frame.cget("fg_color")
+            )
+            mac_frame.grid(row=0, column=2, sticky="nsew", pady=10)
+
+            mac_label = ctk.CTkLabel(
+                mac_frame,
+                text=arduino_as_dict["mac_address"],
+                font=("Inter", 20, "bold"),
+            )
+            mac_label.pack(fill="both", expand=True)
+
+            status_frame = ctk.CTkFrame(
+                arduino_frame, fg_color=arduino_frame.cget("fg_color")
+            )
+            status_frame.grid_rowconfigure(0, weight=1)
+            status_frame.grid_columnconfigure((0, 1), weight=1)
+
+            status_label = ctk.CTkLabel(
+                status_frame,
+                text="Online" if arduino_as_dict["status"] else "Offline",
+                font=("Inter", 20, "bold"),
+            )
+            status_label.grid(row=0, column=0)
+
+            status_display = ctk.CTkFrame(
+                status_frame,
+                fg_color="green" if arduino_as_dict["status"] else "red",
+                corner_radius=15,
+                border_color="black",
+                border_width=4,
+                width=50,
+                height=50,
+            )
+            status_display.grid(row=0, column=1, padx=(5, 0))
+            status_frame.grid(row=0, column=3, sticky="nsew", pady=10)
+
+            delete_frame = ctk.CTkFrame(
+                arduino_frame, fg_color=arduino_frame.cget("fg_color")
+            )
+            delete_frame.grid(
+                row=0, column=4, sticky="nsew", pady=10, padx=(0, border_width)
+            )
+
+            delete_button = ctk.CTkButton(
+                master=delete_frame,
+                text="delete",
+                command=delete_arduino,
+                **Window.button_options,
+            )
+            delete_button.pack(fill="x", expand=True, padx=20)
+
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+        canvas_frame.bind("<Configure>", resizeButton)
+
+        canvas.pack(side="right", fill="both", expand=True, pady=10, padx=10)
+        scrollbar.pack(side="left", fill="y", pady=15, padx=5)
+
+        canvas_frame.grid(row=0, column=0, padx=10, pady=10)
 
         return frame
 
