@@ -19,11 +19,11 @@ class Window(ctk.CTk):
     }
 
     # Default color and animation settings
-    r_value = 255
-    g_value = 0
-    b_value = 255
-    brightness = 255
-    speed = 50
+    r_value = 100
+    g_value = 100
+    b_value = 100
+    brightness = 50
+    speed = 25
     command = "ledOn"
     last_command = ""
 
@@ -259,7 +259,7 @@ class Window(ctk.CTk):
         try:
             response = requests.post(url)
 
-            if response.status_code == 200:
+            if response.status_code in (200, 204):
                 print(response.text)
                 return
 

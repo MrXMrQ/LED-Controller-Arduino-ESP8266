@@ -110,6 +110,8 @@ class IPScanner:
             response = requests.get(f"http://{ip}/mac", timeout=1.5)
             if response.status_code == 200:
                 mac_address = response.text.strip()
+            else:
+                return None
         except requests.RequestException:
             return None
 
