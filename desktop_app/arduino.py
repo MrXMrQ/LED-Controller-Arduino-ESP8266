@@ -94,3 +94,7 @@ class Arduino:
     @property
     def status(self) -> bool:
         return self._online
+
+    @property
+    def last_command(self) -> str:
+        return self._last_command

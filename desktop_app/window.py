@@ -40,6 +40,9 @@ class Window(ctk.CTk):
 
         self._manager = ArduinoManager()
 
+        for i in self._manager.devices:
+            Window.last_command = f"http://{i.ip_address}{i.last_command}"
+
         # Initialize frames
         self.midFrame = self.initMidFrame()
         self.midFrame.grid(row=1, rowspan=9, column=0, sticky="nsew", padx=20, pady=3)
@@ -1109,4 +1112,21 @@ class Window(ctk.CTk):
         return frame
 
     def initSingeLEDTab(self) -> ctk.CTkLabel:
+        numLED = self.getNumLEDs()
+
         return ctk.CTkFrame(self.midFrame)
+
+    def getNumLEDs(self) -> int:
+        if self.option_menu.get() in self.device_map.keys():
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
+            try:
+                response = requests.get(
+                    f"http://{arduino_as_dict["ip_address"]}/ledNum"
+                )
+
+                if response.status_code in (200, 204):
+                    return int(response.text)
+
+                print(f"FAIL: {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                print(f"connection failure: {e}")
