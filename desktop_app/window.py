@@ -693,7 +693,7 @@ class Window(ctk.CTk):
         def start_animation(animation_function):
             """Start a new animation sequence"""
             self.running = False
-            if self.animation_task:
+            if self.animation_task and led.winfo_exists():
                 self.after_cancel(self.animation_task)
             reset_leds()
             self.running = True
@@ -897,7 +897,10 @@ class Window(ctk.CTk):
                         )
                     )
                 self.after(
-                    int(Window.speed) + 200, lambda: led.configure(fg_color="black")
+                    int(Window.speed) + 200,
+                    lambda led=led: (
+                        led.configure(fg_color="black") if led.winfo_exists() else None
+                    ),
                 )
                 self.animation_task = self.after(random.randint(100, 500), animate)
 
@@ -922,7 +925,12 @@ class Window(ctk.CTk):
 
                     led.configure(fg_color=random.choice(colors))
                     self.after(
-                        int(Window.speed), lambda: led.configure(fg_color="black")
+                        int(Window.speed),
+                        lambda led=led: (
+                            led.configure(fg_color="black")
+                            if led.winfo_exists()
+                            else None
+                        ),
                     )
                 self.animation_task = self.after(random.randint(100, 400), animate)
 
