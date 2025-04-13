@@ -252,6 +252,15 @@ class Window(ctk.CTk):
 
                 url = f"http://{arduino_as_dict["ip_address"]}/{Window.command}?r={r}&g={g}&b={b}&br={brightness}&d={speed}"
                 Window.last_command = url
+
+                for i in self._manager.devices:
+                    if i == self.device_map[self.option_menu.get()]:
+                        i._last_command = url.replace(
+                            f"http://{arduino_as_dict["ip_address"]}", ""
+                        )
+
+                self._manager._save_to_file(self._manager.devices)
+
                 self.post(url)
 
     def post(self, url: str) -> None:
@@ -280,10 +289,7 @@ class Window(ctk.CTk):
             label = ctk.CTkLabel(popup, text="Enter new Arduino name")
             label.pack(pady=10)
 
-            entry = ctk.CTkEntry(popup)
-            entry.pack(pady=10)
-
-            def on_submit() -> None:
+            def on_submit(event) -> None:
                 user_input = entry.get()
 
                 if user_input:
@@ -305,6 +311,10 @@ class Window(ctk.CTk):
                         values=options_list,
                         variable=ctk.StringVar(value=default_value),
                     )
+
+            entry = ctk.CTkEntry(popup)
+            entry.bind("<Return>", on_submit)
+            entry.pack(pady=10)
 
             submit_button = ctk.CTkButton(
                 popup, text="Submit", command=on_submit, **Window.button_options

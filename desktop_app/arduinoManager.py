@@ -155,6 +155,7 @@ class ArduinoManager:
                             ip_address=item.get("ip_address", ""),
                             mac_address=item.get("mac_address", ""),
                             status=item.get("status", False),
+                            last_command=item.get("last_command", ""),
                         )
                     )
                 except Exception as e:
