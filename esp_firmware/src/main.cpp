@@ -129,6 +129,13 @@ void getMac() {
 }
 
 /**
+ * @brief Returns the NUM_LEDS of the strip.
+ */
+void getLEDs() {
+  server.send(200, "text/plain", String(NUM_LEDS));
+}
+
+/**
  * @brief Handles unknown web requests.
  */
 void notFound() {
@@ -228,9 +235,23 @@ void raindrop() {
 void fireplace() {
   if (millis() - lastUpdate > delayTime) {
     lastUpdate = millis();
+
+    int numColors = 4;
+    int step = 255 / numColors;
+
+    uint32_t similarColors[numColors];
+    int index = 0;
+
+    for (int i = -numColors / 2; i <= numColors / 2; i++) {
+      int newR = constrain(r + i * step, 0, 255);
+      int newG = constrain(g + i * step, 0, 255);
+      int newB = constrain(b + i * step, 0, 255);
+      similarColors[index++] = strip.Color(newR, newG, newB);
+    }
+
     for (int i = 0; i < NUM_LEDS; i++) {
-      int flicker = random(120, 255);
-      strip.setPixelColor(i, strip.Color(flicker, flicker / 3, 0)); // Fire-like color
+      int randomIndex = random(0, numColors + 1);
+      strip.setPixelColor(i, similarColors[randomIndex]); // Fire-like color
     }
     strip.show();
   }
@@ -357,6 +378,7 @@ void setupServer() {
   });
   server.on("/ledOff", HTTP_POST, ledOff);
   server.on("/mac", HTTP_GET, getMac);
+  server.on("/ledNum", HTTP_GET, getLEDs);
 
   // Animation endpoints
   server.on("/rainbow", HTTP_POST, []() { 
