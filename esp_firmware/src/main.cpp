@@ -157,7 +157,7 @@ void ledOff() {
 void setDefaultState() {
   Serial.println("Setting default state (first 5 LEDs yellow)");
   strip.clear();
-  strip.setBrightness(50);
+  strip.setBrightness(25);
   
   // Set first 5 LEDs to yellow
   for (int i = 0; i < 5; i++) {
@@ -496,7 +496,7 @@ void setupServer() {
   });
   server.on("/ledOff", HTTP_POST, ledOff);
   server.on("/mac", HTTP_GET, getMac);
-  server.on("/ledNum", HTTP_GET, getLEDs);
+  server.on("/num", HTTP_GET, getLEDs);
   server.on("/default", HTTP_POST, []() {
     setDefaultState();
     saveState();
