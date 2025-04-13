@@ -40,6 +40,9 @@ class Window(ctk.CTk):
 
         self._manager = ArduinoManager()
 
+        for i in self._manager.devices:
+            Window.last_command = f"http://{i.ip_address}{i.last_command}"
+
         # Initialize frames
         self.midFrame = self.initMidFrame()
         self.midFrame.grid(row=1, rowspan=9, column=0, sticky="nsew", padx=20, pady=3)
@@ -252,6 +255,15 @@ class Window(ctk.CTk):
 
                 url = f"http://{arduino_as_dict["ip_address"]}/{Window.command}?r={r}&g={g}&b={b}&br={brightness}&d={speed}"
                 Window.last_command = url
+
+                for i in self._manager.devices:
+                    if i == self.device_map[self.option_menu.get()]:
+                        i._last_command = url.replace(
+                            f"http://{arduino_as_dict["ip_address"]}", ""
+                        )
+
+                self._manager._save_to_file(self._manager.devices)
+
                 self.post(url)
 
     def post(self, url: str) -> None:
@@ -280,10 +292,7 @@ class Window(ctk.CTk):
             label = ctk.CTkLabel(popup, text="Enter new Arduino name")
             label.pack(pady=10)
 
-            entry = ctk.CTkEntry(popup)
-            entry.pack(pady=10)
-
-            def on_submit() -> None:
+            def on_submit(event) -> None:
                 user_input = entry.get()
 
                 if user_input:
@@ -305,6 +314,10 @@ class Window(ctk.CTk):
                         values=options_list,
                         variable=ctk.StringVar(value=default_value),
                     )
+
+            entry = ctk.CTkEntry(popup)
+            entry.bind("<Return>", on_submit)
+            entry.pack(pady=10)
 
             submit_button = ctk.CTkButton(
                 popup, text="Submit", command=on_submit, **Window.button_options
@@ -693,7 +706,7 @@ class Window(ctk.CTk):
         def start_animation(animation_function):
             """Start a new animation sequence"""
             self.running = False
-            if self.animation_task:
+            if self.animation_task and led.winfo_exists():
                 self.after_cancel(self.animation_task)
             reset_leds()
             self.running = True
@@ -897,7 +910,10 @@ class Window(ctk.CTk):
                         )
                     )
                 self.after(
-                    int(Window.speed) + 200, lambda: led.configure(fg_color="black")
+                    int(Window.speed) + 200,
+                    lambda led=led: (
+                        led.configure(fg_color="black") if led.winfo_exists() else None
+                    ),
                 )
                 self.animation_task = self.after(random.randint(100, 500), animate)
 
@@ -922,7 +938,12 @@ class Window(ctk.CTk):
 
                     led.configure(fg_color=random.choice(colors))
                     self.after(
-                        int(Window.speed), lambda: led.configure(fg_color="black")
+                        int(Window.speed),
+                        lambda led=led: (
+                            led.configure(fg_color="black")
+                            if led.winfo_exists()
+                            else None
+                        ),
                     )
                 self.animation_task = self.after(random.randint(100, 400), animate)
 
@@ -1091,4 +1112,21 @@ class Window(ctk.CTk):
         return frame
 
     def initSingeLEDTab(self) -> ctk.CTkLabel:
+        numLED = self.getNumLEDs()
+
         return ctk.CTkFrame(self.midFrame)
+
+    def getNumLEDs(self) -> int:
+        if self.option_menu.get() in self.device_map.keys():
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
+            try:
+                response = requests.get(
+                    f"http://{arduino_as_dict["ip_address"]}/ledNum"
+                )
+
+                if response.status_code in (200, 204):
+                    return int(response.text)
+
+                print(f"FAIL: {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                print(f"connection failure: {e}")

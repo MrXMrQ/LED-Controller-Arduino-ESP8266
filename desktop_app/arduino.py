@@ -10,12 +10,18 @@ class Arduino:
     count = 0
 
     def __init__(
-        self, name: str, ip_address: str, mac_address: str, status: bool
+        self,
+        name: str,
+        ip_address: str,
+        mac_address: str,
+        status: bool,
+        last_command: str,
     ) -> None:
         self._name = name
         self._ip_address = ip_address
         self._mac_address = mac_address
         self._online = status
+        self._last_command = last_command
 
         Arduino.count += 1
 
@@ -62,6 +68,7 @@ class Arduino:
             "ip_address": self._ip_address,
             "mac_address": self._mac_address,
             "status": status,
+            "last_command": self._last_command,
         }
 
     @property
@@ -87,3 +94,7 @@ class Arduino:
     @property
     def status(self) -> bool:
         return self._online
+
+    @property
+    def last_command(self) -> str:
+        return self._last_command
