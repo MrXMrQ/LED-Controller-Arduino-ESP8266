@@ -5,6 +5,8 @@ import customtkinter as ctk
 from arduinoManager import ArduinoManager
 import requests
 
+from single_led_tab import SingleLedTab
+
 
 class Window(ctk.CTk):
     button_options = {
@@ -159,6 +161,7 @@ class Window(ctk.CTk):
             dropdown_fg_color="#8387C4",
             dropdown_text_color="white",
             variable=ctk.StringVar(value=default_value),
+            command=self.option_change,
         )
         self.option_menu.grid(row=0, column=0, pady=5, padx=10, sticky="ew")
 
@@ -244,6 +247,10 @@ class Window(ctk.CTk):
 
     def pushButtonClick(self) -> None:
         """Push current color settings to device"""
+        if isinstance(self.current_tab, SingleLedTab):
+            print(self.current_tab._led_index_to_color)
+            return
+
         if self.option_menu.get() in self.device_map.keys():
             arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
             if arduino_as_dict["status"]:
@@ -1111,10 +1118,16 @@ class Window(ctk.CTk):
 
         return frame
 
-    def initSingeLEDTab(self) -> ctk.CTkLabel:
-        numLED = self.getNumLEDs()
+    def option_change(self, option):
+        if isinstance(self.current_tab, SingleLedTab):
+            self.current_tab.draw_leds(
+                self.device_map[self.option_menu.get()].to_dict()
+            )
 
-        return ctk.CTkFrame(self.midFrame)
+    def initSingeLEDTab(self) -> ctk.CTkLabel:
+        return SingleLedTab(
+            self.midFrame, self.device_map[self.option_menu.get()].to_dict()
+        )
 
     def getNumLEDs(self) -> int:
         if self.option_menu.get() in self.device_map.keys():
