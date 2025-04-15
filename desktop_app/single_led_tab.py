@@ -1,6 +1,9 @@
 import customtkinter as ctk
 import requests
+import ast
 from typing import Dict, Tuple, Optional, Callable, Any
+
+from arduino import Arduino
 
 
 class SingleLedTab(ctk.CTkFrame):
@@ -174,7 +177,7 @@ class SingleLedTab(ctk.CTkFrame):
         )
         rgb_button.grid(row=4, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
 
-    def draw_leds(self, arduino) -> None:
+    def draw_leds(self, arduino: Arduino) -> None:
         """Draw LED indicators in the content frame"""
         SingleLedTab.led_index_to_frame = {}
         self._led_index_to_color = {}
@@ -200,12 +203,25 @@ class SingleLedTab(ctk.CTkFrame):
                 height=50,
                 width=50,
                 border_color="black",
+                fg_color="black",
                 border_width=4,
             )
 
             SingleLedTab.led_index_to_frame[i] = led
             led.bind("<Button-1>", lambda event, key=i: self._on_led_click(key))
             led.grid(row=row, column=i % elements_per_line, padx=7, pady=10)
+
+        if "/singleLED" in arduino["last_command"]:
+            singleLEDsetting = ast.literal_eval(
+                arduino["last_command"].replace("/singleLED?singleLED=", "")
+            )
+
+            for i in singleLEDsetting:
+                SingleLedTab.led_index_to_frame[i[0]].configure(
+                    True, fg_color=f"#{i[1]:02x}{i[2]:02x}{i[3]:02x}"
+                )
+
+                self._led_index_to_color[i[0]] = (i[1], i[2], i[3], i[4])
 
     def _on_led_click(self, key: int) -> None:
         """Handle LED click events"""

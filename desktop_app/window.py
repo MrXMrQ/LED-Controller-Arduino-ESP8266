@@ -258,7 +258,27 @@ class Window(ctk.CTk):
     def pushButtonClick(self) -> None:
         """Push current color settings to device"""
         if isinstance(self.current_tab, SingleLedTab):
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
             print(self.current_tab._led_index_to_color)
+
+            a = ()
+
+            for i in self.current_tab._led_index_to_color:
+                new_element = (i,) + self.current_tab._led_index_to_color[i]
+                a = a + (new_element,)
+
+            url = f"http://{arduino_as_dict["ip_address"]}/singleLED?singleLED={a}"
+            Window.last_command = url
+
+            for i in self._manager.devices:
+                if i == self.device_map[self.option_menu.get()]:
+                    i._last_command = url.replace(
+                        f"http://{arduino_as_dict["ip_address"]}", ""
+                    )
+
+            self._manager._save_to_file(self._manager.devices)
+
+            self.post(url)
             return
 
         if self.option_menu.get() in self.device_map.keys():
