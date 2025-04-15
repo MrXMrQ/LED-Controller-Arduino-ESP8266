@@ -21,9 +21,22 @@ const char* password = "";  // Wi-Fi Password
 #define LED_PIN 2       // Pin connected to LED strip
 #define NUM_LEDS 60     // Number of LEDs in the strip
 
+// Structure for individual LED data
+struct LEDPixelData {
+  bool isSet;     // Whether this LED has an individual setting
+  uint8_t r;      // Red component
+  uint8_t g;      // Green component
+  uint8_t b;      // Blue component
+  uint8_t brightness; // Brightness for this LED
+};
+
+// Array to store individual LED data
+LEDPixelData pixelData[NUM_LEDS];
+
 // EEPROM Configuration
-#define EEPROM_SIZE 64  // Space needed to store our configuration
+#define EEPROM_SIZE (64 + (sizeof(LEDPixelData) * NUM_LEDS))  // Space needed to store our configuration
 #define EEPROM_MAGIC 0xAB // Magic number to verify valid EEPROM data
+#define LED_DATA_OFFSET 64 // Offset for storing individual LED data in EEPROM
 
 // Animation Types
 enum AnimationType {
@@ -46,6 +59,7 @@ struct LEDState {
   uint8_t brightness;    // Brightness level
   int animationType;     // Current animation
   unsigned long delayTime; // Animation delay
+  bool hasIndividualLEDs; // Flag indicating if individual LEDs are set
 };
 
 // Web server on port 80
@@ -101,6 +115,37 @@ void runAnimation();
 void saveState();
 bool loadState();
 void setDefaultState();
+void saveIndividualLEDs();
+void loadIndividualLEDs();
+
+/**
+ * @brief Saves the individual LED data to EEPROM
+ */
+void saveIndividualLEDs() {
+  int address = LED_DATA_OFFSET;
+  
+  for (int i = 0; i < NUM_LEDS; i++) {
+    EEPROM.put(address, pixelData[i]);
+    address += sizeof(LEDPixelData);
+  }
+  
+  EEPROM.commit();
+  Serial.println("Individual LED data saved");
+}
+
+/**
+ * @brief Loads the individual LED data from EEPROM
+ */
+void loadIndividualLEDs() {
+  int address = LED_DATA_OFFSET;
+  
+  for (int i = 0; i < NUM_LEDS; i++) {
+    EEPROM.get(address, pixelData[i]);
+    address += sizeof(LEDPixelData);
+  }
+  
+  Serial.println("Individual LED data loaded");
+}
 
 /**
  * @brief Sets all LEDs to a specified color.
@@ -131,10 +176,115 @@ void ledOn() {
   Serial.println("Turning LEDs on.");
   isOn = true;
   isDefaultState = false;
+  
+  // Zurücksetzen der individuellen LED-Einstellungen
+  for (int i = 0; i < NUM_LEDS; i++) {
+    pixelData[i].isSet = false;
+  }
+  
   strip.setBrightness(brightness);
   setAllLeds(strip.Color(r, g, b));
   saveState();
   server.send(204); // No content response
+}
+
+void singleLED() {
+  if (server.hasArg("singleLED")) {
+    String dictStr = server.arg("singleLED");
+    Serial.println("tuple" + dictStr);
+    
+    dictStr = dictStr.substring(1, dictStr.length() - 1);
+    
+    int startPos = 0;
+    
+    // Zuerst alle LEDs als nicht gesetzt markieren
+    for (int i = 0; i < NUM_LEDS; i++) {
+      pixelData[i].isSet = false;
+    }
+    
+    strip.clear();
+    
+    while (true) {
+      int openParenPos = dictStr.indexOf('(', startPos);
+      if (openParenPos == -1) break;
+      
+      int closeParenPos = dictStr.indexOf(')', openParenPos);
+      if (closeParenPos == -1) break;
+      
+      String tupleStr = dictStr.substring(openParenPos + 1, closeParenPos);
+      
+      int ledIndex = 0;
+      int r_val = 0;
+      int g_val = 0;
+      int b_val = 0;
+      int brightness = 0;
+      
+      int commaPos = tupleStr.indexOf(',');
+      if (commaPos != -1) {
+        ledIndex = tupleStr.substring(0, commaPos).toInt();
+        
+        int lastPos = commaPos + 1;
+        commaPos = tupleStr.indexOf(',', lastPos);
+        if (commaPos != -1) {
+          r_val = tupleStr.substring(lastPos, commaPos).toInt();
+          
+          lastPos = commaPos + 1;
+          commaPos = tupleStr.indexOf(',', lastPos);
+          if (commaPos != -1) {
+            g_val = tupleStr.substring(lastPos, commaPos).toInt();
+            
+            lastPos = commaPos + 1;
+            commaPos = tupleStr.indexOf(',', lastPos);
+            if (commaPos != -1) {
+              b_val = tupleStr.substring(lastPos, commaPos).toInt();
+              
+              brightness = tupleStr.substring(commaPos + 1).toInt();
+            }
+          }
+        }
+      }
+      
+      ledIndex = constrain(ledIndex, 0, NUM_LEDS - 1);
+      r_val = constrain(r_val, 0, 255);
+      g_val = constrain(g_val, 0, 255);
+      b_val = constrain(b_val, 0, 255);
+      brightness = constrain(brightness, 0, 255);
+      
+      Serial.printf("Setze LED %d auf RGB(%d, %d, %d) mit Helligkeit %d\n", 
+                    ledIndex, r_val, g_val, b_val, brightness);
+      
+      // Speichere die Daten für diese LED
+      pixelData[ledIndex].isSet = true;
+      pixelData[ledIndex].r = r_val;
+      pixelData[ledIndex].g = g_val;
+      pixelData[ledIndex].b = b_val;
+      pixelData[ledIndex].brightness = brightness;
+      
+      uint8_t scaled_r = (r_val * brightness) / 255;
+      uint8_t scaled_g = (g_val * brightness) / 255;
+      uint8_t scaled_b = (b_val * brightness) / 255;
+      
+      strip.setPixelColor(ledIndex, strip.Color(scaled_r, scaled_g, scaled_b));
+      
+      startPos = closeParenPos + 1;
+      
+      if (dictStr.indexOf('(', startPos) == -1) break;
+    }
+    
+    // Strip aktualisieren
+    isDefaultState = false;
+    isOn = true;
+    currentAnimation = NONE;
+    animationRunning = false;
+    strip.show();
+    
+    // Zustand speichern
+    saveState();
+    
+    server.send(200, "text/plain", "single leds updated and saved");
+  } else {
+    server.send(400, "text/plain", "param: 'singleLED' missing");
+  }
 }
 
 /**
@@ -145,6 +295,12 @@ void ledOff() {
   stopAnimation();
   isOn = false;
   isDefaultState = false;
+  
+  // Zurücksetzen der individuellen LED-Einstellungen
+  for (int i = 0; i < NUM_LEDS; i++) {
+    pixelData[i].isSet = false;
+  }
+  
   strip.clear();
   strip.show();
   saveState();
@@ -158,6 +314,11 @@ void setDefaultState() {
   Serial.println("Setting default state (first 5 LEDs yellow)");
   strip.clear();
   strip.setBrightness(25);
+  
+  // Zurücksetzen der individuellen LED-Einstellungen
+  for (int i = 0; i < NUM_LEDS; i++) {
+    pixelData[i].isSet = false;
+  }
   
   // Set first 5 LEDs to yellow
   for (int i = 0; i < 5; i++) {
@@ -384,6 +545,11 @@ void startAnimation(AnimationType animationType) {
       break;
   }
   
+  // Zurücksetzen der individuellen LED-Einstellungen
+  for (int i = 0; i < NUM_LEDS; i++) {
+    pixelData[i].isSet = false;
+  }
+  
   isDefaultState = false;
   isOn = true;
   currentAnimation = animationType;
@@ -409,11 +575,17 @@ void saveState() {
   state.brightness = brightness;
   state.animationType = (int)currentAnimation;
   state.delayTime = delayTime;
+  state.hasIndividualLEDs = !isDefaultState && currentAnimation == NONE && isOn;
   
   // Write the structure to EEPROM
   EEPROM.put(0, state);
-  EEPROM.commit();
   
+  // Save individual LED data if needed
+  if (state.hasIndividualLEDs) {
+    saveIndividualLEDs();
+  }
+  
+  EEPROM.commit();
   Serial.println("State saved to EEPROM");
 }
 
@@ -447,7 +619,22 @@ bool loadState() {
   // Apply the loaded state
   if (isOn) {
     strip.setBrightness(brightness);
-    if (currentAnimation != NONE) {
+    
+    if (state.hasIndividualLEDs) {
+      loadIndividualLEDs();
+      
+      // Apply individual LED settings
+      strip.clear();
+      for (int i = 0; i < NUM_LEDS; i++) {
+        if (pixelData[i].isSet) {
+          uint8_t scaled_r = (pixelData[i].r * pixelData[i].brightness) / 255;
+          uint8_t scaled_g = (pixelData[i].g * pixelData[i].brightness) / 255;
+          uint8_t scaled_b = (pixelData[i].b * pixelData[i].brightness) / 255;
+          strip.setPixelColor(i, strip.Color(scaled_r, scaled_g, scaled_b));
+        }
+      }
+      strip.show();
+    } else if (currentAnimation != NONE) {
       animationRunning = true;
     } else {
       setAllLeds(strip.Color(r, g, b));
@@ -494,6 +681,9 @@ void setupServer() {
   server.on("/ledOn", HTTP_POST, []() { 
     if (extractArguments()) ledOn(); 
   });
+  server.on("/singleLED", HTTP_POST, [](){
+    singleLED();
+  });
   server.on("/ledOff", HTTP_POST, ledOff);
   server.on("/mac", HTTP_GET, getMac);
   server.on("/num", HTTP_GET, getLEDs);
@@ -537,6 +727,15 @@ void setup() {
   setupLEDs();
   setupWiFi();
   setupServer();
+  
+  // Initialize pixelData array
+  for (int i = 0; i < NUM_LEDS; i++) {
+    pixelData[i].isSet = false;
+    pixelData[i].r = 0;
+    pixelData[i].g = 0;
+    pixelData[i].b = 0;
+    pixelData[i].brightness = 0;
+  }
   
   // Try to load saved state, or use default if no valid state is found
   if (!loadState()) {
