@@ -22,10 +22,10 @@ class Window(ctk.CTk):
     }
 
     # Default color and animation settings
-    r_value = 100
-    g_value = 100
-    b_value = 100
-    brightness = 50
+    r_value = 101
+    g_value = 101
+    b_value = 101
+    brightness = 51
     speed = 25
     command = "ledOn"
     last_command = ""
@@ -543,24 +543,32 @@ class Window(ctk.CTk):
         def update_from_rgb(event=None) -> None:
             """Update color from RGB inputs"""
             try:
-                r_value = int(r_entry.get())
-                g_value = int(g_entry.get())
-                b_value = int(b_entry.get())
 
-                if 0 <= r_value <= 255 and 0 <= g_value <= 255 and 0 <= b_value <= 255:
-                    r_slider.set(r_value)
-                    g_slider.set(g_value)
-                    b_slider.set(b_value)
+                r_value = max(0, min(255, int(r_entry.get())))
+                g_value = max(0, min(255, int(g_entry.get())))
+                b_value = max(0, min(255, int(b_entry.get())))
 
-                    update(r_value, g_value, b_value)
+                r_entry.delete(0, ctk.END)
+                g_entry.delete(0, ctk.END)
+                b_entry.delete(0, ctk.END)
 
-                    colorDisplay.configure(
-                        require_redraw=True,
-                        fg_color=f"#{r_value:02x}{g_value:02x}{b_value:02x}",
-                    )
+                r_entry.insert(0, str(r_value))
+                g_entry.insert(0, str(g_value))
+                b_entry.insert(0, str(b_value))
 
-                    hex_entry.delete(0, ctk.END)
-                    hex_entry.insert(0, f"#{r_value:02x}{g_value:02x}{b_value:02x}")
+                r_slider.set(r_value)
+                g_slider.set(g_value)
+                b_slider.set(b_value)
+
+                update(r_value, g_value, b_value)
+
+                colorDisplay.configure(
+                    require_redraw=True,
+                    fg_color=f"#{r_value:02x}{g_value:02x}{b_value:02x}",
+                )
+
+                hex_entry.delete(0, ctk.END)
+                hex_entry.insert(0, f"#{r_value:02x}{g_value:02x}{b_value:02x}")
             except ValueError:
                 pass
 
