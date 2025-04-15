@@ -1,12 +1,10 @@
 import random
-from textwrap import fill
-from turtle import speed
 import customtkinter as ctk
 from arduino import Arduino
 from arduinoManager import ArduinoManager
 import requests
 
-from single_led_tab import SingleLedTab
+from GUI.single_led_tab import SingleLedTab
 
 
 class Window(ctk.CTk):
@@ -259,8 +257,6 @@ class Window(ctk.CTk):
         """Push current color settings to device"""
         if isinstance(self.current_tab, SingleLedTab):
             arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
-            print(self.current_tab._led_index_to_color)
-
             a = ()
 
             for i in self.current_tab._led_index_to_color:
@@ -329,7 +325,7 @@ class Window(ctk.CTk):
             label = ctk.CTkLabel(popup, text="Enter new Arduino name")
             label.pack(pady=10)
 
-            def on_submit(event) -> None:
+            def on_submit(*args) -> None:
                 user_input = entry.get()
 
                 if user_input:

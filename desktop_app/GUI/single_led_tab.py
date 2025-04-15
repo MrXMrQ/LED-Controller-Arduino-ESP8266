@@ -220,7 +220,6 @@ class SingleLedTab(ctk.CTkFrame):
                 SingleLedTab.led_index_to_frame[i[0]].configure(
                     True, fg_color=f"#{i[1]:02x}{i[2]:02x}{i[3]:02x}"
                 )
-
                 self._led_index_to_color[i[0]] = (i[1], i[2], i[3], i[4])
 
     def _on_led_click(self, key: int) -> None:
