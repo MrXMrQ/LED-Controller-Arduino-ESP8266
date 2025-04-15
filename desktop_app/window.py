@@ -2,6 +2,7 @@ import random
 from textwrap import fill
 from turtle import speed
 import customtkinter as ctk
+from arduino import Arduino
 from arduinoManager import ArduinoManager
 import requests
 
@@ -1126,7 +1127,12 @@ class Window(ctk.CTk):
 
     def initSingeLEDTab(self) -> ctk.CTkLabel:
         return SingleLedTab(
-            self.midFrame, self.device_map[self.option_menu.get()].to_dict()
+            self.midFrame,
+            (
+                self.device_map[self.option_menu.get()].to_dict()
+                if self.option_menu.get() in self.device_map
+                else None
+            ),
         )
 
     def getNumLEDs(self) -> int:
