@@ -137,6 +137,86 @@ void ledOn() {
   server.send(204); // No content response
 }
 
+void singleLED() {
+  if (server.hasArg("singleLED")) {
+    String dictStr = server.arg("singleLED");
+    Serial.println("tuple" + dictStr);
+    
+    dictStr = dictStr.substring(1, dictStr.length() - 1);
+    
+    int startPos = 0;
+    strip.clear();
+    
+    while (true) {
+      int openParenPos = dictStr.indexOf('(', startPos);
+      if (openParenPos == -1) break;
+      
+      int closeParenPos = dictStr.indexOf(')', openParenPos);
+      if (closeParenPos == -1) break;
+      
+      String tupleStr = dictStr.substring(openParenPos + 1, closeParenPos);
+      
+      int ledIndex = 0;
+      int r_val = 0;
+      int g_val = 0;
+      int b_val = 0;
+      int brightness = 0;
+      
+      int commaPos = tupleStr.indexOf(',');
+      if (commaPos != -1) {
+        ledIndex = tupleStr.substring(0, commaPos).toInt();
+        
+        int lastPos = commaPos + 1;
+        commaPos = tupleStr.indexOf(',', lastPos);
+        if (commaPos != -1) {
+          r_val = tupleStr.substring(lastPos, commaPos).toInt();
+          
+          lastPos = commaPos + 1;
+          commaPos = tupleStr.indexOf(',', lastPos);
+          if (commaPos != -1) {
+            g_val = tupleStr.substring(lastPos, commaPos).toInt();
+            
+            lastPos = commaPos + 1;
+            commaPos = tupleStr.indexOf(',', lastPos);
+            if (commaPos != -1) {
+              b_val = tupleStr.substring(lastPos, commaPos).toInt();
+              
+              brightness = tupleStr.substring(commaPos + 1).toInt();
+            }
+          }
+        }
+      }
+      
+      ledIndex = constrain(ledIndex, 0, NUM_LEDS - 1);
+      r_val = constrain(r_val, 0, 255);
+      g_val = constrain(g_val, 0, 255);
+      b_val = constrain(b_val, 0, 255);
+      brightness = constrain(brightness, 0, 255);
+      
+      Serial.printf("Setze LED %d auf RGB(%d, %d, %d) mit Helligkeit %d\n", 
+                    ledIndex, r_val, g_val, b_val, brightness);
+      
+      uint8_t scaled_r = (r_val * brightness) / 255;
+      uint8_t scaled_g = (g_val * brightness) / 255;
+      uint8_t scaled_b = (b_val * brightness) / 255;
+      
+      strip.setPixelColor(ledIndex, strip.Color(scaled_r, scaled_g, scaled_b));
+      
+      startPos = closeParenPos + 1;
+      
+      if (dictStr.indexOf('(', startPos) == -1) break;
+    }
+    
+    // Strip aktualisieren
+    isDefaultState = false;
+    isOn = true;
+    strip.show();
+    server.send(200, "text/plain", "single leds updatet");
+  } else {
+    server.send(400, "text/plain", "param: 'singleLED' missing");
+  }
+}
+
 /**
  * @brief Turns the LEDs off.
  */
@@ -493,6 +573,9 @@ void setupServer() {
   // Basic LED control
   server.on("/ledOn", HTTP_POST, []() { 
     if (extractArguments()) ledOn(); 
+  });
+  server.on("/singleLED", HTTP_POST, [](){
+    singleLED();
   });
   server.on("/ledOff", HTTP_POST, ledOff);
   server.on("/mac", HTTP_GET, getMac);
