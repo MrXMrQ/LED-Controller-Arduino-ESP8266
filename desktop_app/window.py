@@ -387,7 +387,7 @@ class Window(ctk.CTk):
             )
             arduino_frame.grid_rowconfigure(0, weight=1, minsize=200)
             arduino_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
-            arduino_frame.pack(fill="x", padx=5, pady=5)
+            arduino_frame.pack(fill="x", pady=5)
 
             name_frame = ctk.CTkFrame(
                 arduino_frame, fg_color=arduino_frame.cget("fg_color")
@@ -460,7 +460,7 @@ class Window(ctk.CTk):
                 height=50,
             )
             status_display.grid(row=0, column=1, padx=(5, 0))
-            status_frame.grid(row=0, column=3, sticky="nsew", pady=10)
+            status_frame.grid(row=0, column=3, sticky="nsew", pady=10, padx=(0, 5))
 
         canvas.bind_all("<MouseWheel>", on_mousewheel)
         canvas_frame.bind("<Configure>", resizeButton)
