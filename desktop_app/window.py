@@ -29,6 +29,7 @@ class Window(ctk.CTk):
     speed = 25
     command = "ledOn"
     last_command = ""
+    last_button = None
 
     def __init__(self, title, width, height, max_width, max_height):
         super().__init__()
@@ -92,25 +93,33 @@ class Window(ctk.CTk):
 
         # Navigation buttons
         button_data = [
-            ("SCAN", lambda: self.loadTab(self.initScanTab())),
-            ("COLOR", lambda: self.loadTab(self.initColorTab())),
-            ("ANIMATION", lambda: self.loadTab(self.initAnimationTab())),
-            ("SINGLE LED", lambda: self.loadTab(self.initSingeLEDTab())),
+            ("SCAN", self.initScanTab),
+            ("COLOR", self.initColorTab),
+            ("ANIMATION", self.initAnimationTab),
+            ("SINGLE LED", self.initSingeLEDTab),
         ]
 
-        for col, (text, command) in enumerate(button_data):
+        for col, (text, tab_init_func) in enumerate(button_data):
             btn = ctk.CTkButton(
                 topFrame,
                 text=text,
-                command=command,
                 **Window.button_options,
             )
             btn.grid(row=1, column=col, pady=5, padx=10, sticky="ew")
+            btn.configure(
+                command=lambda b=btn, f=tab_init_func: self.loadTab(f(), b),
+            )
 
         return topFrame
 
-    def loadTab(self, tab):
+    def loadTab(self, tab, button: ctk.CTkButton):
         """Replace current tab with new tab"""
+        if Window.last_button is not None:
+            Window.last_button.configure(True, **Window.button_options)
+
+        button.configure(fg_color="#44477A")
+        Window.last_button = button
+
         self.current_tab.destroy()
         self.current_tab = tab
         self.current_tab.pack(
