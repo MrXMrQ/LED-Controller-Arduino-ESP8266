@@ -678,9 +678,11 @@ class Window(ctk.CTk):
             master=rightFrame,
             fg_color=f"#{int(r_slider.get()):02x}{int(g_slider.get()):02x}{int(b_slider.get()):02x}",
             border_color="black",
+            height=200,
+            width=200,
             border_width=4,
         )
-        colorDisplay.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        colorDisplay.grid(row=0, column=0, padx=10, pady=10)
 
         # Brightness control
         rightBotFrame = ctk.CTkFrame(
