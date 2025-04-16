@@ -1,10 +1,10 @@
 import random
 import customtkinter as ctk
-from arduino import Arduino
 from arduinoManager import ArduinoManager
 import requests
 
 from GUI.single_led_tab import SingleLedTab
+from GUI.device_tab import DeviceTab
 
 
 class Window(ctk.CTk):
@@ -118,6 +118,20 @@ class Window(ctk.CTk):
         button.configure(fg_color="#44477A")
         Window.last_button = button
 
+        if isinstance(tab, DeviceTab):
+            self._manager = ArduinoManager()
+            self._build_device_map()
+            options_list = list(self.device_map.keys())
+            print(options_list)
+            default_value = options_list[0] if options_list else "No devices"
+
+            self.option_menu.configure(
+                values=options_list,
+                variable=ctk.StringVar(value=default_value),
+            )
+
+            tab.update_arduinos(self._manager)
+
         self.current_tab.destroy()
         self.current_tab = tab
         self.current_tab.pack(
@@ -188,13 +202,16 @@ class Window(ctk.CTk):
 
         return botFrame
 
-    def _build_device_map(self):
+    def _build_device_map(self, *args) -> dict:
         """
         Build a mapping from display names to device objects.
         Handles duplicate names by adding unique identifiers.
         """
         self.device_map = {}
         name_counts = {}
+
+        if args:
+            self._manager = args[0]
 
         for device in self._manager.devices:
             if device():
@@ -222,6 +239,8 @@ class Window(ctk.CTk):
                     self.device_map[name] = device
                     name_counts[name] = 0
 
+        return self.device_map
+
     def _get_short_mac(self, mac_address: str) -> str:
         """
         Get shortened version of MAC address for display
@@ -241,9 +260,8 @@ class Window(ctk.CTk):
         """Handle LED ON button click"""
         if self.option_menu.get() in self.device_map.keys():
             arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
-            if arduino_as_dict["status"] and Window.last_command != "":
-                url = Window.last_command
-                self.post(url)
+            if arduino_as_dict["status"]:
+                self.post(Window.last_command)
 
     def ledOffButtonClick(self) -> None:
         """Handle LED OFF button click"""
@@ -314,6 +332,9 @@ class Window(ctk.CTk):
 
     def initScanTab(self) -> ctk.CTkFrame:
         """Initialize the scan tab for finding devices"""
+        return DeviceTab(
+            self.midFrame, self._manager, self._build_device_map, self.option_menu
+        )
 
         def edit_name(arduino, label_to_change) -> None:
             popup = ctk.CTkToplevel(self)
