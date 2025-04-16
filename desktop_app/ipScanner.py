@@ -84,7 +84,7 @@ class IPScanner:
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                timeout=1.5,  # Add timeout to prevent hanging
+                timeout=1,  # Add timeout to prevent hanging
             )
             return ip, result.returncode == 0
         except subprocess.TimeoutExpired:
@@ -107,7 +107,7 @@ class IPScanner:
         # Get MAC address and check if endpoint exists
         mac_address = "Unknown"
         try:
-            response = requests.get(f"http://{ip}/mac", timeout=1.5)
+            response = requests.get(f"http://{ip}/mac", timeout=1)
             if response.status_code == 200:
                 mac_address = response.text.strip()
             else:
@@ -116,7 +116,7 @@ class IPScanner:
             return None
 
         # Create and return Arduino object
-        return Arduino("Arduino", ip, mac_address, True, "")
+        return Arduino("Arduino", ip, mac_address, True, "", ())
 
     def scan_network(
         self, max_workers: int = 50, rescan: bool = False

@@ -1,11 +1,10 @@
 import random
-from textwrap import fill
-from turtle import speed
 import customtkinter as ctk
 from arduinoManager import ArduinoManager
 import requests
 
-from single_led_tab import SingleLedTab
+from GUI.single_led_tab import SingleLedTab
+from GUI.device_tab import DeviceTab
 
 
 class Window(ctk.CTk):
@@ -21,13 +20,14 @@ class Window(ctk.CTk):
     }
 
     # Default color and animation settings
-    r_value = 100
-    g_value = 100
-    b_value = 100
-    brightness = 50
+    r_value = 101
+    g_value = 101
+    b_value = 101
+    brightness = 51
     speed = 25
     command = "ledOn"
     last_command = ""
+    last_button = None
 
     def __init__(self, title, width, height, max_width, max_height):
         super().__init__()
@@ -91,25 +91,47 @@ class Window(ctk.CTk):
 
         # Navigation buttons
         button_data = [
-            ("SCAN", lambda: self.loadTab(self.initScanTab())),
-            ("COLOR", lambda: self.loadTab(self.initColorTab())),
-            ("ANIMATION", lambda: self.loadTab(self.initAnimationTab())),
-            ("SINGLE LED", lambda: self.loadTab(self.initSingeLEDTab())),
+            ("SCAN", self.initScanTab),
+            ("COLOR", self.initColorTab),
+            ("ANIMATION", self.initAnimationTab),
+            ("SINGLE LED", self.initSingeLEDTab),
         ]
 
-        for col, (text, command) in enumerate(button_data):
+        for col, (text, tab_init_func) in enumerate(button_data):
             btn = ctk.CTkButton(
                 topFrame,
                 text=text,
-                command=command,
                 **Window.button_options,
             )
             btn.grid(row=1, column=col, pady=5, padx=10, sticky="ew")
+            btn.configure(
+                command=lambda b=btn, f=tab_init_func: self.loadTab(f(), b),
+            )
 
         return topFrame
 
-    def loadTab(self, tab):
+    def loadTab(self, tab, button: ctk.CTkButton):
         """Replace current tab with new tab"""
+        if Window.last_button is not None:
+            Window.last_button.configure(True, **Window.button_options)
+
+        button.configure(fg_color="#44477A")
+        Window.last_button = button
+
+        if isinstance(tab, DeviceTab):
+            self._manager = ArduinoManager()
+            self._build_device_map()
+            options_list = list(self.device_map.keys())
+            print(options_list)
+            default_value = options_list[0] if options_list else "No devices"
+
+            self.option_menu.configure(
+                values=options_list,
+                variable=ctk.StringVar(value=default_value),
+            )
+
+            tab.update_arduinos(self._manager)
+
         self.current_tab.destroy()
         self.current_tab = tab
         self.current_tab.pack(
@@ -180,13 +202,16 @@ class Window(ctk.CTk):
 
         return botFrame
 
-    def _build_device_map(self):
+    def _build_device_map(self, *args) -> dict:
         """
         Build a mapping from display names to device objects.
         Handles duplicate names by adding unique identifiers.
         """
         self.device_map = {}
         name_counts = {}
+
+        if args:
+            self._manager = args[0]
 
         for device in self._manager.devices:
             if device():
@@ -214,6 +239,8 @@ class Window(ctk.CTk):
                     self.device_map[name] = device
                     name_counts[name] = 0
 
+        return self.device_map
+
     def _get_short_mac(self, mac_address: str) -> str:
         """
         Get shortened version of MAC address for display
@@ -233,9 +260,8 @@ class Window(ctk.CTk):
         """Handle LED ON button click"""
         if self.option_menu.get() in self.device_map.keys():
             arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
-            if arduino_as_dict["status"] and Window.last_command != "":
-                url = Window.last_command
-                self.post(url)
+            if arduino_as_dict["status"]:
+                self.post(Window.last_command)
 
     def ledOffButtonClick(self) -> None:
         """Handle LED OFF button click"""
@@ -248,7 +274,28 @@ class Window(ctk.CTk):
     def pushButtonClick(self) -> None:
         """Push current color settings to device"""
         if isinstance(self.current_tab, SingleLedTab):
-            print(self.current_tab._led_index_to_color)
+            arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
+            a = ()
+
+            for i in self.current_tab._led_index_to_color:
+                new_element = (i,) + self.current_tab._led_index_to_color[i]
+                a = a + (new_element,)
+
+            url = f"http://{arduino_as_dict["ip_address"]}/singleLED?singleLED={a}"
+            Window.last_command = url
+
+            for i in self._manager.devices:
+                if i == self.device_map[self.option_menu.get()]:
+                    i._last_command = url.replace(
+                        f"http://{arduino_as_dict["ip_address"]}", ""
+                    )
+                    i._single_led = a
+
+                    self.device_map[self.option_menu.get()] = i
+
+            self._manager._save_to_file(self._manager.devices)
+
+            self.post(url)
             return
 
         if self.option_menu.get() in self.device_map.keys():
@@ -288,6 +335,9 @@ class Window(ctk.CTk):
 
     def initScanTab(self) -> ctk.CTkFrame:
         """Initialize the scan tab for finding devices"""
+        return DeviceTab(
+            self.midFrame, self._manager, self._build_device_map, self.option_menu
+        )
 
         def edit_name(arduino, label_to_change) -> None:
             popup = ctk.CTkToplevel(self)
@@ -299,7 +349,7 @@ class Window(ctk.CTk):
             label = ctk.CTkLabel(popup, text="Enter new Arduino name")
             label.pack(pady=10)
 
-            def on_submit(event) -> None:
+            def on_submit(*args) -> None:
                 user_input = entry.get()
 
                 if user_input:
@@ -386,7 +436,7 @@ class Window(ctk.CTk):
             )
             arduino_frame.grid_rowconfigure(0, weight=1, minsize=200)
             arduino_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
-            arduino_frame.pack(fill="x", padx=5, pady=5)
+            arduino_frame.pack(fill="x", pady=5)
 
             name_frame = ctk.CTkFrame(
                 arduino_frame, fg_color=arduino_frame.cget("fg_color")
@@ -459,7 +509,7 @@ class Window(ctk.CTk):
                 height=50,
             )
             status_display.grid(row=0, column=1, padx=(5, 0))
-            status_frame.grid(row=0, column=3, sticky="nsew", pady=10)
+            status_frame.grid(row=0, column=3, sticky="nsew", pady=10, padx=(0, 5))
 
         canvas.bind_all("<MouseWheel>", on_mousewheel)
         canvas_frame.bind("<Configure>", resizeButton)
@@ -542,24 +592,32 @@ class Window(ctk.CTk):
         def update_from_rgb(event=None) -> None:
             """Update color from RGB inputs"""
             try:
-                r_value = int(r_entry.get())
-                g_value = int(g_entry.get())
-                b_value = int(b_entry.get())
 
-                if 0 <= r_value <= 255 and 0 <= g_value <= 255 and 0 <= b_value <= 255:
-                    r_slider.set(r_value)
-                    g_slider.set(g_value)
-                    b_slider.set(b_value)
+                r_value = max(0, min(255, int(r_entry.get())))
+                g_value = max(0, min(255, int(g_entry.get())))
+                b_value = max(0, min(255, int(b_entry.get())))
 
-                    update(r_value, g_value, b_value)
+                r_entry.delete(0, ctk.END)
+                g_entry.delete(0, ctk.END)
+                b_entry.delete(0, ctk.END)
 
-                    colorDisplay.configure(
-                        require_redraw=True,
-                        fg_color=f"#{r_value:02x}{g_value:02x}{b_value:02x}",
-                    )
+                r_entry.insert(0, str(r_value))
+                g_entry.insert(0, str(g_value))
+                b_entry.insert(0, str(b_value))
 
-                    hex_entry.delete(0, ctk.END)
-                    hex_entry.insert(0, f"#{r_value:02x}{g_value:02x}{b_value:02x}")
+                r_slider.set(r_value)
+                g_slider.set(g_value)
+                b_slider.set(b_value)
+
+                update(r_value, g_value, b_value)
+
+                colorDisplay.configure(
+                    require_redraw=True,
+                    fg_color=f"#{r_value:02x}{g_value:02x}{b_value:02x}",
+                )
+
+                hex_entry.delete(0, ctk.END)
+                hex_entry.insert(0, f"#{r_value:02x}{g_value:02x}{b_value:02x}")
             except ValueError:
                 pass
 
@@ -677,9 +735,11 @@ class Window(ctk.CTk):
             master=rightFrame,
             fg_color=f"#{int(r_slider.get()):02x}{int(g_slider.get()):02x}{int(b_slider.get()):02x}",
             border_color="black",
+            height=200,
+            width=200,
             border_width=4,
         )
-        colorDisplay.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        colorDisplay.grid(row=0, column=0, padx=10, pady=10)
 
         # Brightness control
         rightBotFrame = ctk.CTkFrame(
@@ -1126,7 +1186,12 @@ class Window(ctk.CTk):
 
     def initSingeLEDTab(self) -> ctk.CTkLabel:
         return SingleLedTab(
-            self.midFrame, self.device_map[self.option_menu.get()].to_dict()
+            self.midFrame,
+            (
+                self.device_map[self.option_menu.get()].to_dict()
+                if self.option_menu.get() in self.device_map
+                else None
+            ),
         )
 
     def getNumLEDs(self) -> int:

@@ -156,6 +156,7 @@ class ArduinoManager:
                             mac_address=item.get("mac_address", ""),
                             status=item.get("status", False),
                             last_command=item.get("last_command", ""),
+                            single_led=item.get("single_led", ()),
                         )
                     )
                 except Exception as e:

@@ -1,6 +1,9 @@
 import customtkinter as ctk
 import requests
+import ast
 from typing import Dict, Tuple, Optional, Callable, Any
+
+from arduino import Arduino
 
 
 class SingleLedTab(ctk.CTkFrame):
@@ -18,6 +21,7 @@ class SingleLedTab(ctk.CTkFrame):
         self._last_led = -1
         self._led_index_to_color = {}
         self._rgb_values = {"r": 0, "g": 0, "b": 0}
+        self._brightness = 0
 
         self._updating = False
 
@@ -87,7 +91,7 @@ class SingleLedTab(ctk.CTkFrame):
         self._rightBotFrame = ctk.CTkFrame(
             master=self._rightFrame, border_color="black", border_width=4
         )
-        self._rightBotFrame.grid_rowconfigure((0, 1, 2, 3), weight=1)
+        self._rightBotFrame.grid_rowconfigure((0, 1, 2, 3, 4), weight=1)
         self._rightBotFrame.grid_columnconfigure((0, 1, 2), weight=1)
         self._rightBotFrame.grid(row=1, column=0, sticky="nsew", pady=10, padx=10)
 
@@ -132,6 +136,28 @@ class SingleLedTab(ctk.CTkFrame):
             entry.bind("<Return>", self._update_from_rgb)
             setattr(self, f"_{color}_entry", entry)
 
+        # Create brightness slider and label
+        self._slider_br = ctk.CTkSlider(
+            self._rightBotFrame,
+            from_=0,
+            to=100,
+            number_of_steps=100,
+            command=self.update_brightness,
+            fg_color="gray25",
+        )
+        self._slider_br.grid(row=3, column=0, padx=10, pady=10)
+        self._slider_br.set(self._brightness)
+
+        # Add brightness label
+        br_label = ctk.CTkLabel(self._rightBotFrame, text="💡", text_color="white")
+        br_label.grid(row=3, column=1, padx=10, pady=10)
+
+        # Add brightness entry field
+        self._br_entry = ctk.CTkEntry(self._rightBotFrame)
+        self._br_entry.grid(row=3, column=2, padx=10, pady=10)
+        self._br_entry.insert(0, str(self._brightness))
+        self._br_entry.bind("<Return>", self._update_from_brightness_entry)
+
         button_options = {
             "corner_radius": 7,
             "height": 50,
@@ -149,9 +175,9 @@ class SingleLedTab(ctk.CTkFrame):
             command=self._update_from_rgb,
             **button_options,
         )
-        rgb_button.grid(row=3, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
+        rgb_button.grid(row=4, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
 
-    def draw_leds(self, arduino) -> None:
+    def draw_leds(self, arduino: Arduino) -> None:
         """Draw LED indicators in the content frame"""
         SingleLedTab.led_index_to_frame = {}
         self._led_index_to_color = {}
@@ -177,12 +203,32 @@ class SingleLedTab(ctk.CTkFrame):
                 height=50,
                 width=50,
                 border_color="black",
+                fg_color="black",
                 border_width=4,
             )
 
             SingleLedTab.led_index_to_frame[i] = led
             led.bind("<Button-1>", lambda event, key=i: self._on_led_click(key))
             led.grid(row=row, column=i % elements_per_line, padx=7, pady=10)
+
+        loaded_leds = arduino["single_led"]
+        for i in loaded_leds:
+            SingleLedTab.led_index_to_frame[i[0]].configure(
+                True, fg_color=f"#{i[1]:02x}{i[2]:02x}{i[3]:02x}"
+            )
+            self._led_index_to_color[i[0]] = (i[1], i[2], i[3], i[4])
+
+        return
+        if "/singleLED" in arduino["last_command"]:
+            singleLEDsetting = ast.literal_eval(
+                arduino["last_command"].replace("/singleLED?singleLED=", "")
+            )
+
+            for i in singleLEDsetting:
+                SingleLedTab.led_index_to_frame[i[0]].configure(
+                    True, fg_color=f"#{i[1]:02x}{i[2]:02x}{i[3]:02x}"
+                )
+                self._led_index_to_color[i[0]] = (i[1], i[2], i[3], i[4])
 
     def _on_led_click(self, key: int) -> None:
         """Handle LED click events"""
@@ -195,13 +241,15 @@ class SingleLedTab(ctk.CTkFrame):
         self._last_led = key
 
         if key in self._led_index_to_color:
-            r, g, b = self._led_index_to_color[key]
-            self._update_ui_values(r, g, b)
+            r, g, b, brightness = self._led_index_to_color[key]
+            self._update_ui_values(r, g, b, brightness)
         else:
-            self._update_ui_values(0, 0, 0)
+            self._update_ui_values(0, 0, 0, 0)
 
-    def _update_ui_values(self, r: int, g: int, b: int) -> None:
-        """Update UI elements with RGB values"""
+    def _update_ui_values(
+        self, r: int, g: int, b: int, brightness: float = None
+    ) -> None:
+        """Update UI elements with RGB values and optional brightness"""
         self._updating = True
 
         try:
@@ -218,6 +266,12 @@ class SingleLedTab(ctk.CTkFrame):
             self._rgb_values["g"] = g
             self._rgb_values["b"] = b
 
+            if brightness is not None:
+                self._brightness = brightness
+                self._slider_br.set(brightness)
+                self._br_entry.delete(0, ctk.END)
+                self._br_entry.insert(0, str(int(brightness)))
+
             self._colorDisplay.configure(
                 require_redraw=True, fg_color=f"#{r:02x}{g:02x}{b:02x}"
             )
@@ -231,6 +285,9 @@ class SingleLedTab(ctk.CTkFrame):
 
     def _get_num_leds(self, arduino) -> Optional[int]:
         """Get the number of LEDs from the Arduino server"""
+        if arduino is None:
+            return 0
+
         try:
             response = requests.get(f"http://{arduino['ip_address']}/num")
 
@@ -271,7 +328,40 @@ class SingleLedTab(ctk.CTkFrame):
             require_redraw=True, fg_color=f"#{r:02x}{g:02x}{b:02x}"
         )
 
-        self._update_selected_led_color(r, g, b)
+        self._update_selected_led_color(r, g, b, self._brightness)
+
+    def update_brightness(self, value: float) -> None:
+        """Update brightness value and update the UI"""
+        if self._updating:
+            return
+
+        brightness_value = int(value)
+        self._brightness = brightness_value
+
+        # Update brightness entry field
+        self._br_entry.delete(0, ctk.END)
+        self._br_entry.insert(0, str(brightness_value))
+
+        # Update the selected LED if one is selected
+        if self._last_led != -1:
+            r = self._rgb_values["r"]
+            g = self._rgb_values["g"]
+            b = self._rgb_values["b"]
+            self._update_selected_led_color(r, g, b, brightness_value)
+
+    def _update_from_brightness_entry(self, event=None) -> None:
+        """Update brightness from the entry field"""
+        try:
+            brightness_value = float(self._br_entry.get())
+            brightness_value = max(0, min(100, brightness_value))  # Clamp to 0-100
+
+            self._slider_br.set(brightness_value)
+            self.update_brightness(brightness_value)
+        except ValueError:
+            print("Invalid brightness value. Please enter a number between 0-100.")
+            # Reset to current value
+            self._br_entry.delete(0, ctk.END)
+            self._br_entry.insert(0, str(int(self._brightness)))
 
     def _update_from_rgb(self, event=None) -> None:
         """Update color from RGB input fields"""
@@ -282,7 +372,7 @@ class SingleLedTab(ctk.CTkFrame):
 
             self._update_ui_values(r_value, g_value, b_value)
 
-            self._update_selected_led_color(r_value, g_value, b_value)
+            self._update_selected_led_color(r_value, g_value, b_value, self._brightness)
 
         except ValueError:
             print("Invalid RGB values. Please enter numbers between 0-255.")
@@ -291,11 +381,14 @@ class SingleLedTab(ctk.CTkFrame):
         """Clamp RGB value to 0-255 range"""
         return max(0, min(255, value))
 
-    def _update_selected_led_color(self, r: int, g: int, b: int) -> None:
+    def _update_selected_led_color(
+        self, r: int, g: int, b: int, brightness: float
+    ) -> None:
         """Update the color of the selected LED"""
         if self._last_led != -1 and self._last_led in SingleLedTab.led_index_to_frame:
             SingleLedTab.led_index_to_frame[self._last_led].configure(
                 fg_color=f"#{r:02x}{g:02x}{b:02x}"
             )
 
-            self._led_index_to_color[self._last_led] = (r, g, b)
+            # Store the color and brightness in the dictionary
+            self._led_index_to_color[self._last_led] = (r, g, b, brightness)
