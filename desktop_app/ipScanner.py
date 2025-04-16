@@ -116,7 +116,7 @@ class IPScanner:
             return None
 
         # Create and return Arduino object
-        return Arduino("Arduino", ip, mac_address, True, "")
+        return Arduino("Arduino", ip, mac_address, True, "", ())
 
     def scan_network(
         self, max_workers: int = 50, rescan: bool = False

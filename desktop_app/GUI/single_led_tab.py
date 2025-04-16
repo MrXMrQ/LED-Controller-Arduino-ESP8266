@@ -211,6 +211,14 @@ class SingleLedTab(ctk.CTkFrame):
             led.bind("<Button-1>", lambda event, key=i: self._on_led_click(key))
             led.grid(row=row, column=i % elements_per_line, padx=7, pady=10)
 
+        loaded_leds = arduino["single_led"]
+        for i in loaded_leds:
+            SingleLedTab.led_index_to_frame[i[0]].configure(
+                True, fg_color=f"#{i[1]:02x}{i[2]:02x}{i[3]:02x}"
+            )
+            self._led_index_to_color[i[0]] = (i[1], i[2], i[3], i[4])
+
+        return
         if "/singleLED" in arduino["last_command"]:
             singleLEDsetting = ast.literal_eval(
                 arduino["last_command"].replace("/singleLED?singleLED=", "")
@@ -384,6 +392,3 @@ class SingleLedTab(ctk.CTkFrame):
 
             # Store the color and brightness in the dictionary
             self._led_index_to_color[self._last_led] = (r, g, b, brightness)
-
-            # Here you would typically also send this to the Arduino
-            # For example: self._send_led_data(self._last_led, r, g, b, brightness)

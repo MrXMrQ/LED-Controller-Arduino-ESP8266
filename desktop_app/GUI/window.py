@@ -289,6 +289,9 @@ class Window(ctk.CTk):
                     i._last_command = url.replace(
                         f"http://{arduino_as_dict["ip_address"]}", ""
                     )
+                    i._single_led = a
+
+                    self.device_map[self.option_menu.get()] = i
 
             self._manager._save_to_file(self._manager.devices)
 

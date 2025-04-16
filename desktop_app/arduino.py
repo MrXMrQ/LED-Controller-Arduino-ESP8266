@@ -1,3 +1,4 @@
+from ast import Tuple
 import platform
 import subprocess
 from typing import Dict, Any, Union
@@ -16,12 +17,14 @@ class Arduino:
         mac_address: str,
         status: bool,
         last_command: str,
+        single_led: tuple,
     ) -> None:
         self._name = name
         self._ip_address = ip_address
         self._mac_address = mac_address
         self._online = status
         self._last_command = last_command
+        self._single_led = single_led
 
         Arduino.count += 1
 
@@ -69,6 +72,7 @@ class Arduino:
             "mac_address": self._mac_address,
             "status": status,
             "last_command": self._last_command,
+            "single_led": self._single_led,
         }
 
     @property
@@ -98,3 +102,11 @@ class Arduino:
     @property
     def last_command(self) -> str:
         return self._last_command
+
+    @property
+    def single_led(self) -> Tuple:
+        return self._single_led
+
+    @single_led.setter
+    def single_led(self, value):
+        self._single_led = value
