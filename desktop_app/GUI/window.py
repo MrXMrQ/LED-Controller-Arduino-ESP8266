@@ -3,6 +3,7 @@ import customtkinter as ctk
 from arduinoManager import ArduinoManager
 import requests
 
+from GUI.ColorTab.color_tab import ColorTab
 from GUI.single_led_tab import SingleLedTab
 from GUI.device_tab import DeviceTab
 
@@ -339,188 +340,6 @@ class Window(ctk.CTk):
             self.midFrame, self._manager, self._build_device_map, self.option_menu
         )
 
-        def edit_name(arduino, label_to_change) -> None:
-            popup = ctk.CTkToplevel(self)
-            popup.title("EDIT")
-            popup.geometry("200x200")
-            popup.resizable(False, False)
-            popup.grab_set()
-
-            label = ctk.CTkLabel(popup, text="Enter new Arduino name")
-            label.pack(pady=10)
-
-            def on_submit(*args) -> None:
-                user_input = entry.get()
-
-                if user_input:
-                    popup.destroy()
-
-                    for i in self._manager.devices:
-                        if i == arduino:
-                            i.name = user_input
-
-                    self._manager._save_to_file(self._manager.devices)
-                    label_to_change.configure(text=user_input)
-
-                    self._build_device_map()
-                    options_list = list(self.device_map.keys())
-                    print(options_list)
-                    default_value = options_list[0] if options_list else "No devices"
-
-                    self.option_menu.configure(
-                        values=options_list,
-                        variable=ctk.StringVar(value=default_value),
-                    )
-
-            entry = ctk.CTkEntry(popup)
-            entry.bind("<Return>", on_submit)
-            entry.pack(pady=10)
-
-            submit_button = ctk.CTkButton(
-                popup, text="Submit", command=on_submit, **Window.button_options
-            )
-            submit_button.pack(pady=10)
-
-        def on_mousewheel(event) -> None:
-            """Handle scrolling in animation list"""
-            if canvas.winfo_exists() and canvas.winfo_ismapped():
-                canvas.yview_scroll(-1 * (event.delta // 120), "units")
-
-        def resizeButton(event) -> None:
-            """Resize the animation buttons canvas"""
-            canvas.itemconfigure(
-                window, width=event.width - scrollbar.winfo_width() - 60
-            )
-
-        frame = ctk.CTkFrame(self.midFrame, fg_color="gray20")
-        frame.grid_rowconfigure(0, weight=1)
-        frame.grid_columnconfigure(0, weight=1)
-
-        canvas_frame = ctk.CTkFrame(
-            frame,
-            corner_radius=15,
-            fg_color="gray20",
-            border_color="black",
-            border_width=5,
-        )
-        canvas_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
-
-        canvas = ctk.CTkCanvas(
-            canvas_frame, highlightthickness=0, bg=canvas_frame.cget("fg_color")
-        )
-        scrollbar = ctk.CTkScrollbar(
-            canvas_frame, orientation="vertical", command=canvas.yview
-        )
-
-        content_frame = ctk.CTkFrame(canvas, fg_color=canvas_frame.cget("fg_color"))
-        content_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
-        )
-
-        window = canvas.create_window((0, 0), window=content_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        for arduino in self._manager.devices:
-            arduino_as_dict = arduino.to_dict()
-
-            border_width = 4
-
-            arduino_frame = ctk.CTkFrame(
-                content_frame,
-                fg_color="gray18",
-                corner_radius=15,
-                height=200,
-                border_color="black",
-                border_width=border_width,
-            )
-            arduino_frame.grid_rowconfigure(0, weight=1, minsize=200)
-            arduino_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
-            arduino_frame.pack(fill="x", pady=5)
-
-            name_frame = ctk.CTkFrame(
-                arduino_frame, fg_color=arduino_frame.cget("fg_color")
-            )
-            name_frame.grid_rowconfigure(0, weight=1)
-            name_frame.grid_columnconfigure((0, 1), weight=1)
-
-            name_label = ctk.CTkLabel(
-                name_frame,
-                text=arduino_as_dict["name"],
-                font=("Inter", 20, "bold"),
-            )
-            name_label.grid(row=0, column=0, padx=10)
-
-            edit_button = ctk.CTkButton(
-                name_frame,
-                text="edit",
-                command=lambda arduino=arduino, label=name_label: edit_name(
-                    arduino, label
-                ),
-                **Window.button_options,
-            )
-            edit_button.grid(row=0, column=1)
-            name_frame.grid(
-                row=0, column=0, sticky="nsew", pady=10, padx=(border_width, 0)
-            )
-
-            ip_frame = ctk.CTkFrame(
-                arduino_frame, fg_color=arduino_frame.cget("fg_color")
-            )
-            ip_frame.grid(row=0, column=1, sticky="nsew", pady=10)
-
-            ip_label = ctk.CTkLabel(
-                ip_frame, text=arduino_as_dict["ip_address"], font=("Inter", 20, "bold")
-            )
-            ip_label.pack(fill="both", expand=True, padx=10)
-
-            mac_frame = ctk.CTkFrame(
-                arduino_frame, fg_color=arduino_frame.cget("fg_color")
-            )
-            mac_frame.grid(row=0, column=2, sticky="nsew", pady=10)
-
-            mac_label = ctk.CTkLabel(
-                mac_frame,
-                text=arduino_as_dict["mac_address"],
-                font=("Inter", 20, "bold"),
-            )
-            mac_label.pack(fill="both", expand=True)
-
-            status_frame = ctk.CTkFrame(
-                arduino_frame, fg_color=arduino_frame.cget("fg_color")
-            )
-            status_frame.grid_rowconfigure(0, weight=1)
-            status_frame.grid_columnconfigure((0, 1), weight=1)
-
-            status_label = ctk.CTkLabel(
-                status_frame,
-                text="Online" if arduino_as_dict["status"] else "Offline",
-                font=("Inter", 20, "bold"),
-            )
-            status_label.grid(row=0, column=0)
-
-            status_display = ctk.CTkFrame(
-                status_frame,
-                fg_color="green" if arduino_as_dict["status"] else "red",
-                corner_radius=15,
-                border_color="black",
-                border_width=4,
-                width=50,
-                height=50,
-            )
-            status_display.grid(row=0, column=1, padx=(5, 0))
-            status_frame.grid(row=0, column=3, sticky="nsew", pady=10, padx=(0, 5))
-
-        canvas.bind_all("<MouseWheel>", on_mousewheel)
-        canvas_frame.bind("<Configure>", resizeButton)
-
-        canvas.pack(side="right", fill="both", expand=True, pady=10, padx=10)
-        scrollbar.pack(side="left", fill="y", pady=15, padx=5)
-
-        canvas_frame.grid(row=0, column=0, padx=10, pady=10)
-
-        return frame
-
     def initColorTab(self) -> ctk.CTkFrame:
         """Initialize the color selection tab"""
 
@@ -651,6 +470,7 @@ class Window(ctk.CTk):
         # Green slider and entry
         g_slider = ctk.CTkSlider(
             leftTopFrame,
+            fg_color="red",
             from_=0,
             to=255,
             number_of_steps=256,
@@ -724,7 +544,6 @@ class Window(ctk.CTk):
         )
         hex_button.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
-        # Color display and brightness control
         rightFrame = ctk.CTkFrame(master=frame, border_width=4, border_color="black")
         rightFrame.grid_rowconfigure((0, 1), weight=1)
         rightFrame.grid_columnconfigure(0, weight=1)
@@ -765,6 +584,7 @@ class Window(ctk.CTk):
         night_label = ctk.CTkLabel(rightBotFrame, text="🌑", font=("inter", 20, "bold"))
         night_label.grid(row=0, column=0, padx=10, pady=10)
 
+        return ColorTab(self.midFrame)
         return frame
 
     def initAnimationTab(self):
@@ -1208,3 +1028,6 @@ class Window(ctk.CTk):
                 print(f"FAIL: {response.status_code}")
             except requests.exceptions.RequestException as e:
                 print(f"connection failure: {e}")
+
+    def setCommand(self, command: str) -> None:
+        Window.command = command
