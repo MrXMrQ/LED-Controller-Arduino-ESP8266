@@ -22,8 +22,8 @@ class ColorTab(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure((0, 1), weight=1)
 
-        self._color_picker = ColorPickerRGB(self, ColorTab._BUTTON_STYLE)
-        self._color_picker.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+        self._color_picker_rgb = ColorPickerRGB(self, ColorTab._BUTTON_STYLE)
+        self._color_picker_rgb.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
 
         self._color_picker_hex = ColorPickerHex(self, ColorTab._BUTTON_STYLE)
         self._color_picker_hex.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")

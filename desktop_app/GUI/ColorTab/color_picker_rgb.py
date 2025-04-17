@@ -11,6 +11,7 @@ class ColorPickerRGB(ctk.CTkFrame):
         )
         self.grid_rowconfigure((0, 1), weight=1)
         self.grid_columnconfigure(0, weight=1)
+        self._master = master
         self._button_style = button_style
 
         self._slider_frame = ctk.CTkFrame(
@@ -205,7 +206,7 @@ class ColorPickerRGB(ctk.CTkFrame):
             border_color="black",
             border_width=4,
             corner_radius=15,
-            fg_color=self._convert_rgb_to_hex(self._rgb),
+            fg_color=self.convert_rgb_to_hex(self._rgb),
             height=200,
             width=200,
         )
@@ -215,6 +216,7 @@ class ColorPickerRGB(ctk.CTkFrame):
         self._set_rgb()
         self._update_color_display(self._rgb)
         self._update_entry_text(self._rgb)
+        self._update_color_picker_hex_entry(self._rgb)
 
     def _set_rgb(self) -> None:
         brightness = self._brightness_slider.get() / 255
@@ -226,10 +228,10 @@ class ColorPickerRGB(ctk.CTkFrame):
         )
 
     def _update_color_display(self, rgb: tuple[int, int, int]) -> None:
-        self._color_display_frame.configure(fg_color=self._convert_rgb_to_hex(rgb))
+        self._color_display_frame.configure(fg_color=self.convert_rgb_to_hex(rgb))
 
-    def _convert_rgb_to_hex(self, rgb: tuple[int, int, int]) -> str:
-        return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+    def convert_rgb_to_hex(self, rgb: tuple[int, int, int]) -> str:
+        return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}".upper()
 
     def _update_entry_text(self, rgb: tuple[int, int, int]) -> None:
         self._red_entry.delete(0, ctk.END)
@@ -256,6 +258,22 @@ class ColorPickerRGB(ctk.CTkFrame):
                 self._update_color_display(self._rgb)
 
         self._update_entry_text(self._rgb)
+        self._update_color_picker_hex_entry(self._rgb)
+
+    def update_rgb_from_hex(self, hex_code) -> None:
+        hex_code = hex_code.lstrip("#")
+        self._rgb = tuple(int(hex_code[i : i + 2], 16) for i in (0, 2, 4))
+
+        self._update_color_display(self._rgb)
+        self._update_entry_text(self._rgb)
+
+        self._red_slider.set(self._rgb[0])
+        self._green_slider.set(self._rgb[1])
+        self._blue_slider.set(self._rgb[2])
+        self._brightness_slider.set(255)
+
+    def _update_color_picker_hex_entry(self, rgb: tuple[int, int, int]) -> None:
+        self._master._color_picker_hex._update_hex_entry(self.convert_rgb_to_hex(rgb))
 
     @property
     def rgb(self) -> tuple[int, int, int]:
