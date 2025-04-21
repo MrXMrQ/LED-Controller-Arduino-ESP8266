@@ -141,7 +141,7 @@ class ColorPickerHex(ctk.CTkFrame):
             if i % elements_per_row == 0:
                 current_row += 1
 
-            preset_frame = ctk.CTkButton(
+            preset_button = ctk.CTkButton(
                 self._presets_frame,
                 text="",
                 border_color="black",
@@ -153,7 +153,7 @@ class ColorPickerHex(ctk.CTkFrame):
                     i
                 ]: self._apply_preset(color),
             )
-            preset_frame.grid(
+            preset_button.grid(
                 row=current_row,
                 column=i % elements_per_row,
                 padx=ColorPickerHex._PADX + 12,
