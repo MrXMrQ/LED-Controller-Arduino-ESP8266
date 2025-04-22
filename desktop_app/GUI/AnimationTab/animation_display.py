@@ -18,9 +18,7 @@ class AnimationDisplay(ctk.CTkFrame):
     _PADX = 10
     _PADY = 20
 
-    def __init__(
-        self, master, color_picker_rgb: ColorPickerRGB, *args, **kwargs
-    ) -> None:
+    def __init__(self, master, *args, **kwargs) -> None:
         super().__init__(master, border_color="black", border_width=4, *args, **kwargs)
 
         self.grid_rowconfigure((0, 1), weight=1)
@@ -62,17 +60,19 @@ class AnimationDisplay(ctk.CTkFrame):
             sticky="nsew",
         )
 
-        color_display = ctk.CTkFrame(
+        self._color_display = ctk.CTkFrame(
             self._color_and_speed_frame,
             border_color="black",
             border_width=4,
             height=200,
             width=200,
-            fg_color=color_picker_rgb.convert_rgb_to_hex(color_picker_rgb.rgb),
         )
-        color_display.grid(
+        self._color_display.grid(
             row=0,
             column=1,
             padx=AnimationDisplay._PADX,
             pady=AnimationDisplay._PADY,
         )
+
+    def update_color_display(self, color) -> None:
+        self._color_display.configure(True, fg_color=color)

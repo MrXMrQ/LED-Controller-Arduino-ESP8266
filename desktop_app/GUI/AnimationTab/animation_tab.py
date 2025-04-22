@@ -32,8 +32,12 @@ class AnimationTab(ctk.CTkFrame):
         self._animation_canvas = AnimationCanvas(self, buttons)
         self._animation_canvas.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        self._animation_display = AnimationDisplay(self, color_tab.color_picker_rgb)
+        self._animation_display = AnimationDisplay(self)
         self._animation_display.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+
+    @property
+    def animation_display(self) -> AnimationDisplay:
+        return self._animation_display
 
     def _on_click(self) -> None:
         print("Click!")
