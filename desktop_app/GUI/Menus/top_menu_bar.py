@@ -5,6 +5,7 @@ from GUI.CSButton.cs_button import CSButton
 from GUI.ColorTab.color_tab import ColorTab
 from GUI.AnimationTab.animation_tab import AnimationTab
 from GUI.DeviceTab.device_tab import DeviceTab, OptionsMenu
+from GUI.SingleLEDControllTab.single_led_controll_tab import SingleLEDControllTab
 from GUI.window import ArduinoManager
 
 
@@ -34,12 +35,13 @@ class TopMenuBar(ctk.CTkFrame):
         self._device_tab = DeviceTab(self._tab, self._options_menu)
         self._color_tab = ColorTab(self._tab)
         self._animation_tab = AnimationTab(self._tab, self._color_tab)
+        self._single_led_controll_tab = SingleLEDControllTab(self._tab)
 
         button_data = [
             ("Devices", lambda: self._load(self._device_tab)),
             ("Color", lambda: self._load(self._color_tab)),
             ("Animation", lambda: self._load(self._animation_tab)),
-            ("LED", lambda: print("click")),
+            ("LED", lambda: self._load(self._single_led_controll_tab)),
         ]
         count = 0
 
@@ -66,10 +68,5 @@ class TopMenuBar(ctk.CTkFrame):
             self._options_menu.manager = ArduinoManager()
             tab.add_content()
             self._options_menu.update_options()
-
-            # self._arduino_manger = manager
-            # self._device_map = self._build_device_map()
-            # _options = list(self._device_map.keys())
-            # _default_value = _options[0] if _options else "No devices"
 
         tab.pack(expand=True, fill="both")

@@ -215,7 +215,70 @@ class AnimationTab(ctk.CTkFrame):
         self._led_display.start_animation(animation)
 
     def _fireplace(self) -> None:
-        pass
+        def animate() -> None:
+            if not self._led_display._is_animation_running:
+                return
+
+            num_active_leds = max(1, int(len(self._led_display.leds) * 0.3))
+            active_leds = random.sample(self._led_display.leds, num_active_leds)
+
+            base_color = self._color_tab.color_picker_rgb.rgb
+            base_time = max(1, self._animation_display.animation_speed_slider_value)
+            colors = self._generate_similar_colors(base_color, 8)
+
+            for led in active_leds:
+                if led.winfo_exists() and led.winfo_ismapped():
+                    led.configure(fg_color=random.choice(colors))
+
+                    base_time = max(
+                        1, self._animation_display.animation_speed_slider_value
+                    )
+                    min_time = max(1, int(base_time * 0.5))
+                    max_time = max(min_time + 1, int(base_time * 1.2))
+
+                    flicker_time = random.randint(min_time, max_time)
+
+                    r, g, b = base_color
+                    dimmed_color = self._convert_rgb_to_hex(
+                        (max(0, r // 3), max(0, g // 3), max(0, b // 3))
+                    )
+
+                    self.after(
+                        flicker_time,
+                        lambda led=led: (
+                            led.configure(
+                                fg_color=random.choice(
+                                    [
+                                        dimmed_color,
+                                        "black",
+                                    ]
+                                )
+                            )
+                            if led.winfo_exists()
+                            else None
+                        ),
+                    )
+
+            next_frame_time = random.randint(30, max(31, int(base_time * 0.8)))
+            self._led_display.set_animation_task(self.after(next_frame_time, animate))
+
+        self._led_display.start_animation(animate)
+
+    def _generate_similar_colors(self, base_color: tuple, num_colors: int = 4) -> None:
+        """Generate similar colors for effects"""
+        r, g, b = base_color
+        colors = [self._convert_rgb_to_hex(base_color)]
+
+        step = 255 // num_colors
+
+        for i in range(-num_colors // 2, num_colors // 2 + 1):
+            new_r = max(0, min(255, r + i * step))
+            new_g = max(0, min(255, g + i * step))
+            new_b = max(0, min(255, b + i * step))
+
+            colors.append(self._convert_rgb_to_hex((new_r, new_g, new_b)))
+
+        return colors
 
     @property
     def animation_display(self) -> AnimationDisplay:

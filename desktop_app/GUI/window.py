@@ -4,7 +4,7 @@ import requests
 
 from GUI.ColorTab.color_tab import ColorTab
 from GUI.AnimationTab.animation_tab import AnimationTab
-from GUI.SingleLEDControllTab.single_led_tab import SingleLedTab
+from GUI.SingleLEDControllTab.single_led_tabOld import SingleLedTabOld
 
 
 class Window(ctk.CTk):
@@ -278,7 +278,7 @@ class Window(ctk.CTk):
 
     def pushButtonClick(self) -> None:
         """Push current color settings to device"""
-        if isinstance(self.current_tab, SingleLedTab):
+        if isinstance(self.current_tab, SingleLedTabOld):
             arduino_as_dict = self.device_map[self.option_menu.get()].to_dict()
             a = ()
 
@@ -351,13 +351,13 @@ class Window(ctk.CTk):
         return AnimationTab(self.midFrame, self._color_tab)
 
     def option_change(self, option):
-        if isinstance(self.current_tab, SingleLedTab):
+        if isinstance(self.current_tab, SingleLedTabOld):
             self.current_tab.draw_leds(
                 self.device_map[self.option_menu.get()].to_dict()
             )
 
     def initSingeLEDTab(self) -> ctk.CTkLabel:
-        return SingleLedTab(
+        return SingleLedTabOld(
             self.midFrame,
             (
                 self.device_map[self.option_menu.get()].to_dict()

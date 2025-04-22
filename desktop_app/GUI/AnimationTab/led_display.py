@@ -28,7 +28,7 @@ class LEDDisplay(ctk.CTkFrame):
             led.grid(row=0, column=i)
             self._leds.append(led)
 
-    def start_animation(self, animation_function: Callable):
+    def start_animation(self, animation_function: Callable) -> None:
         self._is_animation_running = False
 
         if self._animation_task:

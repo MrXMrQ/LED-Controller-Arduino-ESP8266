@@ -6,7 +6,7 @@ from typing import Dict, Tuple, Optional, Callable, Any
 from ArduinoBackend.arduino import Arduino
 
 
-class SingleLedTab(ctk.CTkFrame):
+class SingleLedTabOld(ctk.CTkFrame):
     """Tab for controlling individual LED colors in an RGB LED strip."""
 
     led_index_to_frame = {}
@@ -179,7 +179,7 @@ class SingleLedTab(ctk.CTkFrame):
 
     def draw_leds(self, arduino: Arduino) -> None:
         """Draw LED indicators in the content frame"""
-        SingleLedTab.led_index_to_frame = {}
+        SingleLedTabOld.led_index_to_frame = {}
         self._led_index_to_color = {}
 
         if self._content_frame.winfo_children():
@@ -207,7 +207,7 @@ class SingleLedTab(ctk.CTkFrame):
                 border_width=4,
             )
 
-            SingleLedTab.led_index_to_frame[i] = led
+            SingleLedTabOld.led_index_to_frame[i] = led
             led.bind("<Button-1>", lambda event, key=i: self._on_led_click(key))
             led.grid(row=row, column=i % elements_per_line, padx=7, pady=10)
 
@@ -220,7 +220,7 @@ class SingleLedTab(ctk.CTkFrame):
             return
 
         for i in loaded_leds:
-            SingleLedTab.led_index_to_frame[i[0]].configure(
+            SingleLedTabOld.led_index_to_frame[i[0]].configure(
                 True, fg_color=f"#{i[1]:02x}{i[2]:02x}{i[3]:02x}"
             )
             self._led_index_to_color[i[0]] = (i[1], i[2], i[3], i[4])
@@ -232,19 +232,19 @@ class SingleLedTab(ctk.CTkFrame):
             )
 
             for i in singleLEDsetting:
-                SingleLedTab.led_index_to_frame[i[0]].configure(
+                SingleLedTabOld.led_index_to_frame[i[0]].configure(
                     True, fg_color=f"#{i[1]:02x}{i[2]:02x}{i[3]:02x}"
                 )
                 self._led_index_to_color[i[0]] = (i[1], i[2], i[3], i[4])
 
     def _on_led_click(self, key: int) -> None:
         """Handle LED click events"""
-        if self._last_led in SingleLedTab.led_index_to_frame:
-            SingleLedTab.led_index_to_frame[self._last_led].configure(
+        if self._last_led in SingleLedTabOld.led_index_to_frame:
+            SingleLedTabOld.led_index_to_frame[self._last_led].configure(
                 border_color="black"
             )
 
-        SingleLedTab.led_index_to_frame[key].configure(border_color="gray25")
+        SingleLedTabOld.led_index_to_frame[key].configure(border_color="gray25")
         self._last_led = key
 
         if key in self._led_index_to_color:
@@ -392,8 +392,11 @@ class SingleLedTab(ctk.CTkFrame):
         self, r: int, g: int, b: int, brightness: float
     ) -> None:
         """Update the color of the selected LED"""
-        if self._last_led != -1 and self._last_led in SingleLedTab.led_index_to_frame:
-            SingleLedTab.led_index_to_frame[self._last_led].configure(
+        if (
+            self._last_led != -1
+            and self._last_led in SingleLedTabOld.led_index_to_frame
+        ):
+            SingleLedTabOld.led_index_to_frame[self._last_led].configure(
                 fg_color=f"#{r:02x}{g:02x}{b:02x}"
             )
 
