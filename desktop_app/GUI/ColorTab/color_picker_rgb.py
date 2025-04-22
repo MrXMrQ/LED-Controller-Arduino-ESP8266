@@ -1,18 +1,19 @@
 import customtkinter as ctk
 
+from GUI.CSButton.cs_button import CSButton
+
 
 class ColorPickerRGB(ctk.CTkFrame):
     _FONT = ("Inter", 16, "bold")
     _PADX = 10
 
-    def __init__(self, master, button_style: dict, *args, **kwargs) -> None:
+    def __init__(self, master, *args, **kwargs) -> None:
         super().__init__(
             master=master, border_color="black", border_width=4, *args, **kwargs
         )
         self.grid_rowconfigure((0, 1), weight=1)
         self.grid_columnconfigure(0, weight=1)
         self._master = master
-        self._button_style = button_style
 
         self._slider_frame = ctk.CTkFrame(
             self,
@@ -145,11 +146,10 @@ class ColorPickerRGB(ctk.CTkFrame):
             self._green_entry,
             self._blue_entry,
         ]
-        submit_rgb_entrys_btn = ctk.CTkButton(
+        submit_rgb_entrys_btn = CSButton(
             self._slider_frame,
             text="Submit",
             command=self._update_color_from_entry,
-            **self._button_style,
         )
         submit_rgb_entrys_btn.grid(
             row=3,

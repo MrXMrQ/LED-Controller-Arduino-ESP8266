@@ -1,19 +1,10 @@
 from typing import Callable
 import customtkinter as ctk
 
+from GUI.CSButton.cs_button import CSButton
+
 
 class AnimationCanvas(ctk.CTkFrame):
-    button_styles = {
-        "corner_radius": 7,
-        "height": 60,
-        "fg_color": "#8387C4",
-        "hover_color": "#8378C4",
-        "text_color": "white",
-        "font": ("Inter", 20, "bold"),
-        "border_width": 4,
-        "border_color": "#2D315A",
-    }
-
     _PADX = 10
     _PADY = 20
 
@@ -54,11 +45,10 @@ class AnimationCanvas(ctk.CTkFrame):
 
     def _add_content(self, content: list[tuple[str, Callable]]) -> None:
         for text, command in content:
-            btn = ctk.CTkButton(
+            btn = CSButton(
                 self._content_frame,
                 text=text,
                 command=command,
-                **AnimationCanvas.button_styles
             )
             btn.pack(fill="x", padx=AnimationCanvas._PADX, pady=AnimationCanvas._PADY)
             btn.bind("<MouseWheel>", self._on_mousewheel)
