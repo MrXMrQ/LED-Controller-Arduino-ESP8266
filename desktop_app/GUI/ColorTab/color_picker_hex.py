@@ -1,6 +1,8 @@
 import re as regex
 import customtkinter as ctk
 
+from GUI.CSButton.cs_button import CSButton
+
 
 class ColorPickerHex(ctk.CTkFrame):
     _FONT = ("Inter", 20, "bold")
@@ -42,7 +44,7 @@ class ColorPickerHex(ctk.CTkFrame):
         "#8B4513",  # SaddleBrown (neu)
     ]
 
-    def __init__(self, master, button_style: dict, *args, **kwargs) -> None:
+    def __init__(self, master, *args, **kwargs) -> None:
         super().__init__(
             master=master,
             border_color="black",
@@ -54,7 +56,6 @@ class ColorPickerHex(ctk.CTkFrame):
         self.grid_rowconfigure((0, 1), weight=1)
         self.grid_columnconfigure(0, weight=1)
         self._master = master
-        self._button_style = button_style
 
         self._hex_frame = ctk.CTkFrame(self, border_color="black", border_width=4)
         self._hex_frame.grid_rowconfigure((0, 1, 2), weight=1)
@@ -108,11 +109,10 @@ class ColorPickerHex(ctk.CTkFrame):
             sticky="nsew",
         )
 
-        hex_entry_submit_btn = ctk.CTkButton(
+        hex_entry_submit_btn = CSButton(
             self._hex_frame,
             text="submit",
             command=self._apply_hex_input,
-            **self._button_style
         )
         hex_entry_submit_btn.grid(
             row=2,
@@ -141,7 +141,7 @@ class ColorPickerHex(ctk.CTkFrame):
             if i % elements_per_row == 0:
                 current_row += 1
 
-            preset_frame = ctk.CTkButton(
+            preset_button = CSButton(
                 self._presets_frame,
                 text="",
                 border_color="black",
@@ -153,7 +153,7 @@ class ColorPickerHex(ctk.CTkFrame):
                     i
                 ]: self._apply_preset(color),
             )
-            preset_frame.grid(
+            preset_button.grid(
                 row=current_row,
                 column=i % elements_per_row,
                 padx=ColorPickerHex._PADX + 12,

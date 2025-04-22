@@ -4,6 +4,7 @@ from arduinoManager import ArduinoManager
 import requests
 
 from GUI.ColorTab.color_tab import ColorTab
+from GUI.AnimationTab.animation_tab import AnimationTab
 from GUI.single_led_tab import SingleLedTab
 from GUI.device_tab import DeviceTab
 
@@ -51,11 +52,11 @@ class Window(ctk.CTk):
         self.midFrame.grid(row=1, rowspan=9, column=0, sticky="nsew", padx=20, pady=3)
         self.midFrame.pack_propagate(False)
 
-        self.topFrame = self.initTopFrame()
-        self.topFrame.grid(row=0, column=0, sticky="nsew", padx=20, pady=3)
-
         self.botFrame = self.initBotFrame()
         self.botFrame.grid(row=10, column=0, sticky="nsew", padx=20, pady=3)
+
+        self.topFrame = self.initTopFrame()
+        self.topFrame.grid(row=0, column=0, sticky="nsew", padx=20, pady=3)
 
         # Animation state
         self.running = False
@@ -90,15 +91,20 @@ class Window(ctk.CTk):
         )
         label.grid(row=0, column=0, columnspan=4, pady=5)
 
+        self._scan_tab = self.initScanTab()
+        self._color_tab = self.initColorTab()
+        self._animation_tab = self.initAnimationTab()
+        self._single_tab = self.initSingeLEDTab()
+
         # Navigation buttons
         button_data = [
-            ("SCAN", self.initScanTab),
-            ("COLOR", self.initColorTab),
-            ("ANIMATION", self.initAnimationTab),
-            ("SINGLE LED", self.initSingeLEDTab),
+            ("SCAN", self._scan_tab),
+            ("COLOR", self._color_tab),
+            ("ANIMATION", self._animation_tab),
+            ("SINGLE LED", self._single_tab),
         ]
 
-        for col, (text, tab_init_func) in enumerate(button_data):
+        for col, (text, tab_init) in enumerate(button_data):
             btn = ctk.CTkButton(
                 topFrame,
                 text=text,
@@ -106,7 +112,7 @@ class Window(ctk.CTk):
             )
             btn.grid(row=1, column=col, pady=5, padx=10, sticky="ew")
             btn.configure(
-                command=lambda b=btn, f=tab_init_func: self.loadTab(f(), b),
+                command=lambda b=btn, f=tab_init: self.loadTab(f, b),
             )
 
         return topFrame
@@ -335,260 +341,15 @@ class Window(ctk.CTk):
             print(f"connection failure: {e}")
 
     def initScanTab(self) -> ctk.CTkFrame:
-        """Initialize the scan tab for finding devices"""
         return DeviceTab(
             self.midFrame, self._manager, self._build_device_map, self.option_menu
         )
 
     def initColorTab(self) -> ctk.CTkFrame:
-        """Initialize the color selection tab"""
-
-        def update(r, g, b) -> None:
-            """Update the color values"""
-            Window.r_value = int(r)
-            Window.g_value = int(g)
-            Window.b_value = int(b)
-
-        def update_color() -> None:
-            """Update all color UI elements"""
-            r_value = r_slider.get()
-            g_value = g_slider.get()
-            b_value = b_slider.get()
-
-            r_entry.delete(0, ctk.END)
-            g_entry.delete(0, ctk.END)
-            b_entry.delete(0, ctk.END)
-
-            r_entry.insert(0, str(int(r_value)))
-            g_entry.insert(0, str(int(g_value)))
-            b_entry.insert(0, str(int(b_value)))
-
-            update(r_value, g_value, b_value)
-
-            hex_entry.delete(0, ctk.END)
-            hex_entry.insert(
-                0, f"#{int(r_value):02x}{int(g_value):02x}{int(b_value):02x}"
-            )
-
-            colorDisplay.configure(
-                require_redraw=True,
-                fg_color=f"#{int(r_value):02x}{int(g_value):02x}{int(b_value):02x}",
-            )
-
-        def update_brightness() -> None:
-            """Update brightness value"""
-            Window.brightness = int(brightness_slider.get())
-
-        def update_from_hex(event=None) -> None:
-            """Update color from hex input"""
-            hex_value = hex_entry.get()
-
-            if len(hex_value) == 7 and hex_value[0] == "#":
-                try:
-                    r_value, g_value, b_value = [
-                        int(hex_value[i : i + 2], 16) for i in range(1, 7, 2)
-                    ]
-
-                    r_slider.set(r_value)
-                    g_slider.set(g_value)
-                    b_slider.set(b_value)
-
-                    update(r_value, g_value, b_value)
-
-                    r_entry.delete(0, ctk.END)
-                    g_entry.delete(0, ctk.END)
-                    b_entry.delete(0, ctk.END)
-
-                    r_entry.insert(0, str(r_value))
-                    g_entry.insert(0, str(g_value))
-                    b_entry.insert(0, str(b_value))
-
-                    colorDisplay.configure(require_redraw=True, fg_color=hex_value)
-
-                except ValueError:
-                    pass
-
-        def update_from_rgb(event=None) -> None:
-            """Update color from RGB inputs"""
-            try:
-
-                r_value = max(0, min(255, int(r_entry.get())))
-                g_value = max(0, min(255, int(g_entry.get())))
-                b_value = max(0, min(255, int(b_entry.get())))
-
-                r_entry.delete(0, ctk.END)
-                g_entry.delete(0, ctk.END)
-                b_entry.delete(0, ctk.END)
-
-                r_entry.insert(0, str(r_value))
-                g_entry.insert(0, str(g_value))
-                b_entry.insert(0, str(b_value))
-
-                r_slider.set(r_value)
-                g_slider.set(g_value)
-                b_slider.set(b_value)
-
-                update(r_value, g_value, b_value)
-
-                colorDisplay.configure(
-                    require_redraw=True,
-                    fg_color=f"#{r_value:02x}{g_value:02x}{b_value:02x}",
-                )
-
-                hex_entry.delete(0, ctk.END)
-                hex_entry.insert(0, f"#{r_value:02x}{g_value:02x}{b_value:02x}")
-            except ValueError:
-                pass
-
-        frame = ctk.CTkFrame(self.midFrame)
-        frame.grid_rowconfigure((0, 1), weight=1)
-        frame.grid_columnconfigure((0, 1), weight=1)
-
-        Window.command = "ledOn"
-
-        # RGB sliders and inputs
-        leftTopFrame = ctk.CTkFrame(master=frame, border_color="black", border_width=4)
-        leftTopFrame.grid_rowconfigure((0, 1, 2, 3), weight=1)
-        leftTopFrame.grid_columnconfigure((0, 1, 2), weight=1)
-        leftTopFrame.grid(row=0, column=0, sticky="nsew", pady=10, padx=10)
-
-        # Red slider and entry
-        r_slider = ctk.CTkSlider(
-            leftTopFrame,
-            from_=0,
-            to=255,
-            number_of_steps=256,
-            command=lambda x: update_color(),
-        )
-        r_slider.grid(row=0, column=0, padx=10, pady=10)
-        r_slider.set(Window.r_value)
-        r_slider.configure(fg_color="red")
-
-        r_label = ctk.CTkLabel(leftTopFrame, text="R", text_color="red")
-        r_label.grid(row=0, column=1, padx=10, pady=10)
-
-        # Green slider and entry
-        g_slider = ctk.CTkSlider(
-            leftTopFrame,
-            fg_color="red",
-            from_=0,
-            to=255,
-            number_of_steps=256,
-            command=lambda x: update_color(),
-        )
-        g_slider.grid(row=1, column=0, padx=10, pady=10)
-        g_slider.set(Window.g_value)
-        g_slider.configure(fg_color="green")
-
-        g_label = ctk.CTkLabel(leftTopFrame, text="G", text_color="green")
-        g_label.grid(row=1, column=1, padx=10, pady=10)
-
-        # Blue slider and entry
-        b_slider = ctk.CTkSlider(
-            leftTopFrame,
-            from_=0,
-            to=255,
-            number_of_steps=256,
-            command=lambda x: update_color(),
-        )
-        b_slider.grid(row=2, column=0, padx=10, pady=10)
-        b_slider.set(Window.b_value)
-        b_slider.configure(fg_color="blue")
-
-        b_label = ctk.CTkLabel(leftTopFrame, text="B", text_color="blue")
-        b_label.grid(row=2, column=1, padx=10, pady=10)
-
-        # RGB value entries
-        r_entry = ctk.CTkEntry(leftTopFrame)
-        r_entry.grid(row=0, column=2, padx=10, pady=10)
-        r_entry.insert(0, str(int(r_slider.get())))
-        r_entry.bind("<Return>", update_from_rgb)
-
-        g_entry = ctk.CTkEntry(leftTopFrame)
-        g_entry.grid(row=1, column=2, padx=10, pady=10)
-        g_entry.insert(0, str(int(g_slider.get())))
-        g_entry.bind("<Return>", update_from_rgb)
-
-        b_entry = ctk.CTkEntry(leftTopFrame)
-        b_entry.grid(row=2, column=2, padx=10, pady=10)
-        b_entry.insert(0, str(int(b_slider.get())))
-        b_entry.bind("<Return>", update_from_rgb)
-
-        rgb_button = ctk.CTkButton(
-            leftTopFrame,
-            text="Apply RGB",
-            command=update_from_rgb,
-            **Window.button_options,
-        )
-        rgb_button.grid(row=3, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
-
-        # Hex input section
-        leftBotFrame = ctk.CTkFrame(master=frame, border_color="black", border_width=4)
-        leftBotFrame.grid_rowconfigure((0, 1), weight=1)
-        leftBotFrame.grid_columnconfigure(0, weight=1)
-        leftBotFrame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
-
-        hex_entry = ctk.CTkEntry(leftBotFrame, height=50)
-        hex_entry.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
-        hex_entry.insert(
-            0,
-            f"#{int(r_slider.get()):02x}{int(g_slider.get()):02x}{int(b_slider.get()):02x}",
-        )
-        hex_entry.bind("<Return>", update_from_hex)
-
-        hex_button = ctk.CTkButton(
-            leftBotFrame,
-            text="Apply HEX",
-            command=update_from_hex,
-            **Window.button_options,
-        )
-        hex_button.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
-
-        rightFrame = ctk.CTkFrame(master=frame, border_width=4, border_color="black")
-        rightFrame.grid_rowconfigure((0, 1), weight=1)
-        rightFrame.grid_columnconfigure(0, weight=1)
-        rightFrame.grid(row=0, rowspan=2, column=1, sticky="nsew", padx=10, pady=10)
-
-        # Color preview
-        colorDisplay = ctk.CTkFrame(
-            master=rightFrame,
-            fg_color=f"#{int(r_slider.get()):02x}{int(g_slider.get()):02x}{int(b_slider.get()):02x}",
-            border_color="black",
-            height=200,
-            width=200,
-            border_width=4,
-        )
-        colorDisplay.grid(row=0, column=0, padx=10, pady=10)
-
-        # Brightness control
-        rightBotFrame = ctk.CTkFrame(
-            master=rightFrame, border_width=4, border_color="black"
-        )
-        rightBotFrame.grid_rowconfigure(0, weight=1)
-        rightBotFrame.grid_columnconfigure((0, 1, 2), weight=1)
-        rightBotFrame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
-
-        sun_label = ctk.CTkLabel(rightBotFrame, text="☀️", font=("inter", 20, "bold"))
-        sun_label.grid(row=0, column=2, padx=10, pady=10)
-
-        brightness_slider = ctk.CTkSlider(
-            rightBotFrame,
-            from_=0,
-            to=255,
-            number_of_steps=256,
-            command=lambda x: update_brightness(),
-        )
-        brightness_slider.grid(row=0, column=1)
-        brightness_slider.set(Window.brightness)
-
-        night_label = ctk.CTkLabel(rightBotFrame, text="🌑", font=("inter", 20, "bold"))
-        night_label.grid(row=0, column=0, padx=10, pady=10)
-
         return ColorTab(self.midFrame)
-        return frame
 
-    def initAnimationTab(self):
-        """Initialize the animation selection tab"""
+    def initAnimationTab(self) -> AnimationTab:
+        return AnimationTab(self.midFrame, self._color_tab)
 
         def start_animation(animation_function):
             """Start a new animation sequence"""

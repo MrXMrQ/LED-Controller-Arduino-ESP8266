@@ -211,7 +211,14 @@ class SingleLedTab(ctk.CTkFrame):
             led.bind("<Button-1>", lambda event, key=i: self._on_led_click(key))
             led.grid(row=row, column=i % elements_per_line, padx=7, pady=10)
 
-        loaded_leds = arduino["single_led"]
+        loaded_leds = None
+
+        if arduino is not None:
+            loaded_leds = arduino["single_led"]
+
+        if loaded_leds is None:
+            return
+
         for i in loaded_leds:
             SingleLedTab.led_index_to_frame[i[0]].configure(
                 True, fg_color=f"#{i[1]:02x}{i[2]:02x}{i[3]:02x}"
