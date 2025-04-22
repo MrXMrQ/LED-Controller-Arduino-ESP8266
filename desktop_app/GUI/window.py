@@ -1,10 +1,10 @@
 import customtkinter as ctk
-from arduinoManager import ArduinoManager
+from ArduinoBackend.arduinoManager import ArduinoManager
 import requests
 
 from GUI.ColorTab.color_tab import ColorTab
 from GUI.AnimationTab.animation_tab import AnimationTab
-from GUI.single_led_tab import SingleLedTab
+from GUI.SingleLEDControllTab.single_led_tab import SingleLedTab
 
 
 class Window(ctk.CTk):

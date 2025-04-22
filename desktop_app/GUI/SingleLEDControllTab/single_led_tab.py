@@ -3,7 +3,7 @@ import requests
 import ast
 from typing import Dict, Tuple, Optional, Callable, Any
 
-from arduino import Arduino
+from ArduinoBackend.arduino import Arduino
 
 
 class SingleLedTab(ctk.CTkFrame):

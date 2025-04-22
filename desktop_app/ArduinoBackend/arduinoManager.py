@@ -1,5 +1,5 @@
-from arduino import Arduino
-from ipScanner import IPScanner
+from ArduinoBackend.arduino import Arduino
+from ArduinoBackend.ipScanner import IPScanner
 
 import json
 import os

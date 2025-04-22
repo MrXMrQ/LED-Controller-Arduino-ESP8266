@@ -1,7 +1,7 @@
 from cgitb import text
 import customtkinter as ctk
 
-from arduinoManager import ArduinoManager
+from ArduinoBackend.arduinoManager import ArduinoManager
 
 
 class OptionsMenu(ctk.CTkOptionMenu):
@@ -21,16 +21,15 @@ class OptionsMenu(ctk.CTkOptionMenu):
         *args,
         **kwargs,
     ) -> None:
-
         self._arduino_manger = manager
         self._device_map = self._build_device_map()
-        options = list(self._device_map.keys())
-        default_value = options[0] if options else "No devices"
+        _options = list(self._device_map.keys())
+        _default_value = _options[0] if _options else "No devices"
 
         super().__init__(
             master,
-            values=options,
-            variable=ctk.StringVar(value=default_value),
+            values=_options,
+            variable=ctk.StringVar(value=_default_value),
             command=self._on_option_change,
             fg_color=fg_color,
             button_color=button_color,
@@ -76,6 +75,16 @@ class OptionsMenu(ctk.CTkOptionMenu):
     def _on_option_change(self, value) -> None:
         print(value)
 
+    def update_options(self) -> None:
+        self._device_map = self._build_device_map()
+        _options = list(self._device_map.keys())
+        _default_value = _options[0] if _options else "No devices"
+
+        self.configure(
+            values=_options,
+            variable=ctk.StringVar(value=_default_value),
+        )
+
     @property
     def device_map(self) -> dict:
         return self._device_map
@@ -83,3 +92,7 @@ class OptionsMenu(ctk.CTkOptionMenu):
     @property
     def manager(self) -> ArduinoManager:
         return self._arduino_manger
+
+    @manager.setter
+    def manager(self, value: ArduinoManager) -> None:
+        self._arduino_manger = value

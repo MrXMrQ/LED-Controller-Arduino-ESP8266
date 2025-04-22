@@ -1,8 +1,8 @@
 import customtkinter as ctk
 
 from GUI.CSButton.cs_button import CSButton
-from GUI.OptionsMenu.options_menu import OptionsMenu
-from arduino import Arduino
+from GUI.Menus.options_menu import OptionsMenu
+from ArduinoBackend.arduino import Arduino
 
 
 class PopUp(ctk.CTkToplevel):
@@ -43,7 +43,7 @@ class PopUp(ctk.CTkToplevel):
         )
         submit_button.pack(pady=10)
 
-    def _on_submit(self, event) -> None:
+    def _on_submit(self, event=None) -> None:
         user_input = self._entry.get()
         if user_input:
             self.destroy()

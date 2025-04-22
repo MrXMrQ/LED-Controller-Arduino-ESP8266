@@ -1,7 +1,7 @@
 import customtkinter as ctk
 
-from GUI.MenuBars.top_menu_bar import TopMenuBar
-from GUI.MenuBars.bot_menu_bar import BotMenuBar
+from GUI.Menus.top_menu_bar import TopMenuBar
+from GUI.Menus.bot_menu_bar import BotMenuBar
 
 
 class NewWindow(ctk.CTk):

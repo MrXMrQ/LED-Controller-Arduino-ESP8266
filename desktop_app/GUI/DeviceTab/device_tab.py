@@ -2,8 +2,8 @@ import customtkinter as ctk
 
 from GUI.CSButton.cs_button import CSButton
 from GUI.DeviceTab.popup import PopUp
-from GUI.MenuBars.bot_menu_bar import OptionsMenu
-from arduino import Arduino
+from GUI.Menus.bot_menu_bar import OptionsMenu
+from ArduinoBackend.arduino import Arduino
 
 
 class DeviceTab(ctk.CTkFrame):

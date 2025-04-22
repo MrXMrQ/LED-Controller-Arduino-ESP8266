@@ -1,7 +1,7 @@
 import customtkinter as ctk
 
 from GUI.CSButton.cs_button import CSButton
-from GUI.OptionsMenu.options_menu import OptionsMenu
+from GUI.Menus.options_menu import OptionsMenu
 from GUI.window import ArduinoManager
 
 

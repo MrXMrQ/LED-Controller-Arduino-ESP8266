@@ -6,7 +6,7 @@ import requests
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple, Set, Optional
-from arduino import Arduino
+from ArduinoBackend.arduino import Arduino
 
 
 class IPScanner:

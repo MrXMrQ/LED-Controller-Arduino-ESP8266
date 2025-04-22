@@ -4,7 +4,7 @@ from GUI.CSButton.cs_button import CSButton
 
 from GUI.ColorTab.color_tab import ColorTab
 from GUI.AnimationTab.animation_tab import AnimationTab
-from GUI.DeviceTab.device_tab import DeviceTab
+from GUI.DeviceTab.device_tab import DeviceTab, OptionsMenu
 from GUI.window import ArduinoManager
 
 
@@ -13,7 +13,7 @@ class TopMenuBar(ctk.CTkFrame):
     _PADY = 10
 
     def __init__(
-        self, master, tab: ctk.CTkFrame, device_map: dict, *args, **kwargs
+        self, master, tab: ctk.CTkFrame, options_menu: OptionsMenu, *args, **kwargs
     ) -> None:
         super().__init__(
             master,
@@ -26,12 +26,12 @@ class TopMenuBar(ctk.CTkFrame):
         )
 
         self._tab = tab
-        self._device_map = device_map
+        self._options_menu = options_menu
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
-        self._device_tab = DeviceTab(self._tab, self._device_map)
+        self._device_tab = DeviceTab(self._tab, self._options_menu)
         self._color_tab = ColorTab(self._tab)
         self._animation_tab = AnimationTab(self._tab, self._color_tab)
 
@@ -63,6 +63,13 @@ class TopMenuBar(ctk.CTkFrame):
             tab.animation_display.update_color_display()
 
         if isinstance(tab, DeviceTab):
+            self._options_menu.manager = ArduinoManager()
             tab.add_content()
+            self._options_menu.update_options()
+
+            # self._arduino_manger = manager
+            # self._device_map = self._build_device_map()
+            # _options = list(self._device_map.keys())
+            # _default_value = _options[0] if _options else "No devices"
 
         tab.pack(expand=True, fill="both")
