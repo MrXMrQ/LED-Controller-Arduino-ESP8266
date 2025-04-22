@@ -47,16 +47,9 @@ class AnimationCanvas(ctk.CTkFrame):
         self._add_content(content)
 
         self._canvas.bind("<Configure>", self._on_canvas_configure)
-
-        # Globales MouseWheel-Binding für den Canvas
         self._canvas.bind("<MouseWheel>", self._on_mousewheel)
-
-        # Globales Binding für den Content-Frame
         self._content_frame.bind("<MouseWheel>", self._on_mousewheel)
-
-        # Globales Binding für den Haupt-Frame
         self.bind("<MouseWheel>", self._on_mousewheel)
-
         self._content_frame.bind("<Configure>", self._on_frame_configure)
 
     def _add_content(self, content: list[tuple[str, Callable]]) -> None:
@@ -77,7 +70,5 @@ class AnimationCanvas(ctk.CTkFrame):
         self._canvas.itemconfig(self._canvas_window, width=event.width)
 
     def _on_mousewheel(self, event) -> None:
-        # Direktes Scrollen ohne bind_all/unbind_all
         self._canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        # Stoppe die Weitergabe des Events, um Konflikte zu vermeiden
         return "break"

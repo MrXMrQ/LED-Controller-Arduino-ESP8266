@@ -212,7 +212,7 @@ class ColorPickerRGB(ctk.CTkFrame):
         )
         self._color_display_frame.grid(row=0, column=0, pady=10)
 
-    def _update_color_from_slider(self, value) -> None:
+    def _update_color_from_slider(self, value: float = 0) -> None:
         self._set_rgb()
         self._update_color_display(self._rgb)
         self._update_entry_text(self._rgb)
@@ -226,6 +226,10 @@ class ColorPickerRGB(ctk.CTkFrame):
             int(round(self._green_slider.get()) * brightness),
             int(round(self._blue_slider.get()) * brightness),
         )
+
+    def update_from_animation_tab(self, value) -> None:
+        self._brightness_slider.set(value)
+        self._update_color_from_slider()
 
     def _update_color_display(self, rgb: tuple[int, int, int]) -> None:
         self._color_display_frame.configure(fg_color=self.convert_rgb_to_hex(rgb))
@@ -278,3 +282,7 @@ class ColorPickerRGB(ctk.CTkFrame):
     @property
     def rgb(self) -> tuple[int, int, int]:
         return self._rgb
+
+    @property
+    def brightness_slider_value(self) -> float:
+        return self._brightness_slider.get()

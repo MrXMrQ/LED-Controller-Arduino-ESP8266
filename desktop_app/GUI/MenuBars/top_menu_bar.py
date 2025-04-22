@@ -52,10 +52,6 @@ class TopMenuBar(ctk.CTkFrame):
             child.pack_forget()
 
         if isinstance(tab, AnimationTab):
-            tab.animation_display.update_color_display(
-                self._color_tab.color_picker_rgb.convert_rgb_to_hex(
-                    self._color_tab.color_picker_rgb.rgb
-                )
-            )
+            tab.animation_display.update_color_display()
 
         tab.pack(expand=True, fill="both")
