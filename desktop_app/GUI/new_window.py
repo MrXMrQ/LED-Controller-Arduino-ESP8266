@@ -29,12 +29,14 @@ class NewWindow(ctk.CTk):
         )
         self._temp.pack_propagate(False)
 
-        self._top_menu_bar = TopMenuBar(self, self._temp)
-        self._top_menu_bar.grid(
-            row=0, column=0, sticky="nsew", padx=NewWindow._PADX, pady=NewWindow._PADY
-        )
-
         self._bot_menu_bar = BotMenuBar(self)
         self._bot_menu_bar.grid(
             row=10, column=0, sticky="nsew", padx=NewWindow._PADX, pady=NewWindow._PADY
+        )
+
+        self._top_menu_bar = TopMenuBar(
+            self, self._temp, self._bot_menu_bar.options_menu
+        )
+        self._top_menu_bar.grid(
+            row=0, column=0, sticky="nsew", padx=NewWindow._PADX, pady=NewWindow._PADY
         )

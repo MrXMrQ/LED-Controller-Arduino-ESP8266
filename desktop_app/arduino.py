@@ -64,6 +64,12 @@ class Arduino:
             pass
         return False
 
+    def get_short_mac(self) -> str:
+        if not self.mac_address or self.mac_address == "Unknown":
+            return "Unknown"
+
+        return self.mac_address[-6:].upper()
+
     def to_dict(self) -> Dict[str, Any]:
         status = self()
         return {
