@@ -49,6 +49,7 @@ class AnimationCanvas(ctk.CTkFrame):
                 self._content_frame,
                 text=text,
                 command=command,
+                font=("Segoe UI Emoji", 20),
             )
             btn.pack(fill="x", padx=AnimationCanvas._PADX, pady=AnimationCanvas._PADY)
             btn.bind("<MouseWheel>", self._on_mousewheel)

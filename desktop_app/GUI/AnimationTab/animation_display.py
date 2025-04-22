@@ -73,7 +73,7 @@ class AnimationDisplay(ctk.CTkFrame):
             slider_frame,
             text="🔅",
             text_color="#3F72AF",
-            font=("Segoe UI Emoji", 16),
+            font=("Segoe UI Emoji", 25),
             anchor="e",
         )
         brightness_label_left.grid(
@@ -84,7 +84,7 @@ class AnimationDisplay(ctk.CTkFrame):
             slider_frame,
             text="🔆",
             text_color="#3F72AF",
-            font=("Segoe UI Emoji", 16),
+            font=("Segoe UI Emoji", 25),
             anchor="w",
         )
         brightness_label_right.grid(
@@ -113,7 +113,7 @@ class AnimationDisplay(ctk.CTkFrame):
             slider_frame,
             text="🐇",
             text_color="#3F72AF",
-            font=("Segoe UI Emoji", 16),
+            font=("Segoe UI Emoji", 25),
             anchor="e",
         )
         animation_speed_label_left.grid(
@@ -124,7 +124,7 @@ class AnimationDisplay(ctk.CTkFrame):
             slider_frame,
             text="🐢",
             text_color="#3F72AF",
-            font=("Segoe UI Emoji", 16),
+            font=("Segoe UI Emoji", 25),
             anchor="w",
         )
         animation_speed_label_right.grid(

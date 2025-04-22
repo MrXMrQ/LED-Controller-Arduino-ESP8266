@@ -5,6 +5,7 @@ from GUI.CSButton.cs_button import CSButton
 from GUI.ColorTab.color_tab import ColorTab
 from GUI.AnimationTab.animation_tab import AnimationTab
 from GUI.DeviceTab.device_tab import DeviceTab
+from GUI.window import ArduinoManager
 
 
 class TopMenuBar(ctk.CTkFrame):
@@ -52,11 +53,16 @@ class TopMenuBar(ctk.CTkFrame):
             )
             count += 1
 
+        self._load(self._device_tab)
+
     def _load(self, tab: ctk.CTkFrame) -> None:
         for child in self._tab.winfo_children():
             child.pack_forget()
 
         if isinstance(tab, AnimationTab):
             tab.animation_display.update_color_display()
+
+        if isinstance(tab, DeviceTab):
+            tab.add_content()
 
         tab.pack(expand=True, fill="both")

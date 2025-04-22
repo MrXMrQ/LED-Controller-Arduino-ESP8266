@@ -37,7 +37,7 @@ class DeviceTab(ctk.CTkFrame):
             (0, 0), window=self._content_frame, anchor="nw"
         )
 
-        self._add_content()
+        self.add_content()
 
         self._canvas.bind("<Configure>", self._on_canvas_configure)
         self._canvas.bind("<MouseWheel>", self._on_mousewheel)
@@ -45,7 +45,7 @@ class DeviceTab(ctk.CTkFrame):
         self.bind("<MouseWheel>", self._on_mousewheel)
         self._content_frame.bind("<Configure>", self._on_frame_configure)
 
-    def _add_content(self) -> None:
+    def add_content(self) -> None:
         for widget in self._content_frame.winfo_children():
             if widget.winfo_exists():
                 widget.destroy()
@@ -89,7 +89,7 @@ class DeviceTab(ctk.CTkFrame):
 
             edit_button = CSButton(
                 name_frame,
-                text="edit",
+                text="rename",
                 command=lambda arduino=arduino, label=name_label: self._edit_name(
                     arduino, label
                 ),

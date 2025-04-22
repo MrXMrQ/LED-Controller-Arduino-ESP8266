@@ -23,10 +23,14 @@ class BotMenuBar(ctk.CTkFrame):
         self._options_menu = OptionsMenu(self, ArduinoManager())
         self._options_menu.grid(row=0, column=0, pady=5, padx=10, sticky="ew")
 
-        led_on_btn = CSButton(self, "🔆", command=self._led_on)
+        led_on_btn = CSButton(
+            self, "🔆", command=self._led_on, font=("Segoe UI Emoji", 30)
+        )
         led_on_btn.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
-        led_off_btn = CSButton(self, "🔅", command=self._led_off)
+        led_off_btn = CSButton(
+            self, "🔅", command=self._led_off, font=("Segoe UI Emoji", 30)
+        )
         led_off_btn.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
 
         post_button_btn = CSButton(self, "Post", command=self._post)
