@@ -10,9 +10,12 @@ class AnimationTab(ctk.CTkFrame):
     _PADX = 10
     _PADY = 10
 
-    def __init__(self, master, color_tab: ColorTab, *args, **kwargs) -> None:
+    def __init__(
+        self, master, color_tab: ColorTab, top_menu_bar, *args, **kwargs
+    ) -> None:
         super().__init__(master=master, *args, **kwargs)
         self._color_tab = color_tab
+        self._top_menu_bar = top_menu_bar
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure((0, 1), weight=1)
@@ -35,11 +38,17 @@ class AnimationTab(ctk.CTkFrame):
         self._animation_display.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
         self._led_display = self._animation_display.led_display
+        self._command = ""
+        self._animation = None
+        self._rgb = self._color_tab.color_picker_rgb.rgb
+        self._delay = self.animation_display.animation_delay_slider_value
 
     def _convert_rgb_to_hex(self, rgb) -> str:
         return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
 
     def _rainbow(self) -> None:
+        self._animation = "rainbow"
+        self.create_command()
         colors = [
             (255, 0, 0),  # Red
             (255, 127, 0),  # Orange
@@ -70,7 +79,7 @@ class AnimationTab(ctk.CTkFrame):
             index = (index + 1) % len(colors)
             self._led_display.set_animation_task(
                 self.after(
-                    int(self._animation_display.animation_speed_slider_value),
+                    int(self._animation_display.animation_delay_slider_value),
                     animation,
                 )
             )
@@ -78,6 +87,9 @@ class AnimationTab(ctk.CTkFrame):
         self._led_display.start_animation(animation_function=animation)
 
     def _pulsing_light(self) -> None:
+        self._animation = "pulsing_light"
+        self.create_command()
+
         base_r, base_g, base_b = self._color_tab.color_picker_rgb.rgb
         max_brightness = self._animation_display.brightness_slider_value
 
@@ -126,13 +138,15 @@ class AnimationTab(ctk.CTkFrame):
 
             self._led_display.set_animation_task(
                 self.after(
-                    int(self._animation_display.animation_speed_slider_value), animation
+                    int(self._animation_display.animation_delay_slider_value), animation
                 )
             )
 
         self._led_display.start_animation(animation)
 
     def _chaising_light(self) -> None:
+        self._animation = "chaising_light"
+        self.create_command()
         index = 0
 
         def animation() -> None:
@@ -151,13 +165,15 @@ class AnimationTab(ctk.CTkFrame):
             index = (index + 1) % len(self._led_display.leds)
             self._led_display.set_animation_task(
                 self.after(
-                    int(self._animation_display.animation_speed_slider_value), animation
+                    int(self._animation_display.animation_delay_slider_value), animation
                 )
             )
 
         self._led_display.start_animation(animation)
 
     def _strobe(self) -> None:
+        self._animation = "stobe"
+        self.create_command()
         colors = [
             self._convert_rgb_to_hex(self._color_tab.color_picker_rgb.rgb),
             "#000000",
@@ -182,13 +198,16 @@ class AnimationTab(ctk.CTkFrame):
 
             self._led_display.set_animation_task(
                 self.after(
-                    int(self._animation_display.animation_speed_slider_value), animation
+                    int(self._animation_display.animation_delay_slider_value), animation
                 )
             )
 
         self._led_display.start_animation(animation)
 
     def _raindrop(self) -> None:
+        self._animation = "raindrop"
+        self.create_command()
+
         def animation() -> None:
             if not self._led_display._is_animation_running:
                 return
@@ -203,7 +222,7 @@ class AnimationTab(ctk.CTkFrame):
                 )
 
             self.after(
-                int(self._animation_display.animation_speed_slider_value) + 200,
+                int(self._animation_display.animation_delay_slider_value) + 200,
                 lambda led=led: (
                     led.configure(fg_color="black") if led.winfo_exists() else None
                 ),
@@ -215,6 +234,9 @@ class AnimationTab(ctk.CTkFrame):
         self._led_display.start_animation(animation)
 
     def _fireplace(self) -> None:
+        self._animation = "fireplace"
+        self.create_command()
+
         def animate() -> None:
             if not self._led_display._is_animation_running:
                 return
@@ -223,7 +245,7 @@ class AnimationTab(ctk.CTkFrame):
             active_leds = random.sample(self._led_display.leds, num_active_leds)
 
             base_color = self._color_tab.color_picker_rgb.rgb
-            base_time = max(1, self._animation_display.animation_speed_slider_value)
+            base_time = max(1, self._animation_display.animation_delay_slider_value)
             colors = self._generate_similar_colors(base_color, 8)
 
             for led in active_leds:
@@ -231,7 +253,7 @@ class AnimationTab(ctk.CTkFrame):
                     led.configure(fg_color=random.choice(colors))
 
                     base_time = max(
-                        1, self._animation_display.animation_speed_slider_value
+                        1, self._animation_display.animation_delay_slider_value
                     )
                     min_time = max(1, int(base_time * 0.5))
                     max_time = max(min_time + 1, int(base_time * 1.2))
@@ -280,6 +302,20 @@ class AnimationTab(ctk.CTkFrame):
 
         return colors
 
+    def create_command(self) -> None:
+        if self._animation is None:
+            return ""
+
+        animation = self._animation
+        rgb = self._color_tab.color_picker_rgb.rgb
+        delay = self._animation_display.animation_delay_slider_value
+
+        self._command = f"{animation}?r={rgb[0]}&g={rgb[1]}&b={rgb[2]}&delay={delay}"
+
     @property
     def animation_display(self) -> AnimationDisplay:
         return self._animation_display
+
+    @property
+    def command(self) -> str:
+        return self._command

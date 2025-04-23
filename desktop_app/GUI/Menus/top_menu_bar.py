@@ -28,14 +28,17 @@ class TopMenuBar(ctk.CTkFrame):
 
         self._tab = tab
         self._options_menu = options_menu
+        self._active_tab = None
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
         self._device_tab = DeviceTab(self._tab, self._options_menu)
-        self._color_tab = ColorTab(self._tab)
-        self._animation_tab = AnimationTab(self._tab, self._color_tab)
-        self._single_led_controll_tab = SingleLEDControllTab(self._tab)
+        self._color_tab = ColorTab(self._tab, self)
+        self._animation_tab = AnimationTab(self._tab, self._color_tab, self)
+        self._single_led_controll_tab = SingleLEDControllTab(
+            self._tab, self._options_menu
+        )
 
         button_data = [
             ("Devices", lambda: self._load(self._device_tab)),
@@ -63,10 +66,23 @@ class TopMenuBar(ctk.CTkFrame):
 
         if isinstance(tab, AnimationTab):
             tab.animation_display.update_color_display()
+            tab.create_command()
 
         if isinstance(tab, DeviceTab):
             self._options_menu.manager = ArduinoManager()
             tab.add_content()
             self._options_menu.update_options()
 
+        if isinstance(tab, SingleLEDControllTab):
+            tab.single_led_display.draw_leds()
+
+        self._active_tab = tab
         tab.pack(expand=True, fill="both")
+
+    @property
+    def single_led_controller_tab(self) -> SingleLEDControllTab:
+        return self._single_led_controll_tab
+
+    @property
+    def active_tab(self) -> str:
+        return self._active_tab

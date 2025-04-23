@@ -30,7 +30,6 @@ class OptionsMenu(ctk.CTkOptionMenu):
             master,
             values=_options,
             variable=ctk.StringVar(value=_default_value),
-            command=self._on_option_change,
             fg_color=fg_color,
             button_color=button_color,
             button_hover_color=button_hover_color,
@@ -71,9 +70,6 @@ class OptionsMenu(ctk.CTkOptionMenu):
                     name_counts[name] = 0
 
         return device_map
-
-    def _on_option_change(self, value) -> None:
-        print(value)
 
     def update_options(self) -> None:
         self._device_map = self._build_device_map()

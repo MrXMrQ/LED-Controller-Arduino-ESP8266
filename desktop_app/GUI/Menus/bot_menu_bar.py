@@ -1,5 +1,6 @@
 import customtkinter as ctk
 
+from ArduinoBackend.arduino import Arduino
 from GUI.CSButton.cs_button import CSButton
 from GUI.Menus.options_menu import OptionsMenu
 from GUI.window import ArduinoManager
@@ -22,6 +23,8 @@ class BotMenuBar(ctk.CTkFrame):
 
         self._options_menu = OptionsMenu(self, ArduinoManager())
         self._options_menu.grid(row=0, column=0, pady=5, padx=10, sticky="ew")
+        self._master = master
+        self._last_command = ""
 
         led_on_btn = CSButton(
             self, "🔆", command=self._led_on, font=("Segoe UI Emoji", 30)
@@ -43,7 +46,27 @@ class BotMenuBar(ctk.CTkFrame):
         print("led off")
 
     def _post(self) -> None:
+        if not hasattr(self._master.top_menu_bar.active_tab, "command"):
+            print(self._last_command)
+            return
+
+        if not self._options_menu.get() in self._options_menu.device_map:
+            print("No Arduino Selected")
+
+        arduino: Arduino = self._options_menu.device_map[self._options_menu.get()]
+
         print("POST")
+
+        url: str = (
+            f"http://{arduino.ip_address}/{self._master.top_menu_bar.active_tab.command}"
+        )
+
+        if url.replace(f"http://{arduino.ip_address}/", "") == "":
+            print(self._last_command)
+            return
+
+        print(url)
+        self._last_command = url
 
     @property
     def options_menu(self) -> OptionsMenu:

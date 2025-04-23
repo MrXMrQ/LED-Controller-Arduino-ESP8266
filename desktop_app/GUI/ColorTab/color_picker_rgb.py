@@ -217,6 +217,8 @@ class ColorPickerRGB(ctk.CTkFrame):
         self._update_color_display(self._rgb)
         self._update_entry_text(self._rgb)
         self._update_color_picker_hex_entry(self._rgb)
+        self._update_single_led(self._rgb)
+        self.update_command(self._rgb)
 
     def _set_rgb(self) -> None:
         brightness = self._brightness_slider.get() / 255
@@ -275,9 +277,20 @@ class ColorPickerRGB(ctk.CTkFrame):
         self._green_slider.set(self._rgb[1])
         self._blue_slider.set(self._rgb[2])
         self._brightness_slider.set(255)
+        self.update_command(self._rgb)
 
     def _update_color_picker_hex_entry(self, rgb: tuple[int, int, int]) -> None:
-        self._master._color_picker_hex._update_hex_entry(self.convert_rgb_to_hex(rgb))
+        if hasattr(self._master, "_color_picker_hex"):
+            self._master._color_picker_hex._update_hex_entry(
+                self.convert_rgb_to_hex(rgb)
+            )
+
+    def _update_single_led(self, rgb: tuple[int, int, int]) -> None:
+        if hasattr(self._master, "_single_led_display"):
+            self._master.change_led_color(self.convert_rgb_to_hex(rgb=rgb))
+
+    def update_command(self, rgb: tuple[int, int, int]) -> None:
+        self._master.command = f"ledOn?r={rgb[0]}&g={rgb[1]}&b={rgb[2]}"
 
     @property
     def rgb(self) -> tuple[int, int, int]:
