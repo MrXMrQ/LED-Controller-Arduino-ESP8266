@@ -1,4 +1,4 @@
-from ast import Tuple
+import ast
 import platform
 import subprocess
 from typing import Dict, Any, Union
@@ -29,7 +29,7 @@ class Arduino:
         Arduino.count += 1
 
     def __str__(self) -> str:
-        return self._name
+        return f"{self._name}, {self._single_led}"
 
     def __eq__(self, value) -> bool:
         if not isinstance(value, Arduino):
@@ -63,6 +63,12 @@ class Arduino:
         except requests.RequestException:
             pass
         return False
+
+    def get_short_mac(self) -> str:
+        if not self.mac_address or self.mac_address == "Unknown":
+            return "Unknown"
+
+        return self.mac_address[-6:].upper()
 
     def to_dict(self) -> Dict[str, Any]:
         status = self()
@@ -104,9 +110,9 @@ class Arduino:
         return self._last_command
 
     @property
-    def single_led(self) -> Tuple:
+    def single_led(self) -> tuple:
         return self._single_led
 
     @single_led.setter
-    def single_led(self, value):
+    def single_led(self, value) -> None:
         self._single_led = value

@@ -1,5 +1,5 @@
-from arduino import Arduino
-from ipScanner import IPScanner
+from ArduinoBackend.arduino import Arduino
+from ArduinoBackend.ipScanner import IPScanner
 
 import json
 import os
@@ -271,3 +271,7 @@ class ArduinoManager:
             List of Arduino objects
         """
         return self._devices.copy()
+
+    @devices.setter
+    def devices(self, value) -> None:
+        self._devices = value

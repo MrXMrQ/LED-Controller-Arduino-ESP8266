@@ -16,6 +16,7 @@ class AnimationDisplay(ctk.CTkFrame):
 
         self.grid_rowconfigure((0, 1), weight=1)
         self.grid_columnconfigure(0, weight=1)
+        self._master = master
 
         self._led_display = LEDDisplay(self, border_color="black", border_width=4)
         self._led_display.grid(
@@ -73,7 +74,7 @@ class AnimationDisplay(ctk.CTkFrame):
             slider_frame,
             text="🔅",
             text_color="#3F72AF",
-            font=("Segoe UI Emoji", 16),
+            font=("Segoe UI Emoji", 25),
             anchor="e",
         )
         brightness_label_left.grid(
@@ -84,14 +85,14 @@ class AnimationDisplay(ctk.CTkFrame):
             slider_frame,
             text="🔆",
             text_color="#3F72AF",
-            font=("Segoe UI Emoji", 16),
+            font=("Segoe UI Emoji", 25),
             anchor="w",
         )
         brightness_label_right.grid(
             row=0, column=2, padx=ColorPickerRGB._PADX, pady=10, sticky="w"
         )
 
-        self._animation_speed_slider = ctk.CTkSlider(
+        self._animation_delay_slider = ctk.CTkSlider(
             slider_frame,
             fg_color="#E0DEDA",
             progress_color="#C2C0BA",
@@ -100,20 +101,20 @@ class AnimationDisplay(ctk.CTkFrame):
             from_=1,
             to=600,
             number_of_steps=600,
-            command=self._update_animation_speed_slider,
+            command=self._update_animation_delay_slider,
         )
-        self._animation_speed_slider.set(300)
-        self._animation_speed_slider.grid(
+        self._animation_delay_slider.set(300)
+        self._animation_delay_slider.grid(
             row=1, column=1, padx=ColorPickerRGB._PADX, pady=10
         )
 
-        self._animation_speed = self._animation_speed_slider.get()
+        self._animation_delay = self._animation_delay_slider.get()
 
         animation_speed_label_left = ctk.CTkLabel(
             slider_frame,
             text="🐇",
             text_color="#3F72AF",
-            font=("Segoe UI Emoji", 16),
+            font=("Segoe UI Emoji", 25),
             anchor="e",
         )
         animation_speed_label_left.grid(
@@ -124,7 +125,7 @@ class AnimationDisplay(ctk.CTkFrame):
             slider_frame,
             text="🐢",
             text_color="#3F72AF",
-            font=("Segoe UI Emoji", 16),
+            font=("Segoe UI Emoji", 25),
             anchor="w",
         )
         animation_speed_label_right.grid(
@@ -148,9 +149,10 @@ class AnimationDisplay(ctk.CTkFrame):
     def _update_brightness_slider(self, value) -> None:
         self._color_picker_rgb.update_from_animation_tab(value)
         self.update_color_display()
+        self._master.create_command()
 
-    def _update_animation_speed_slider(self, value) -> None:
-        self._animation_speed = self._animation_speed_slider.get()
+    def _update_animation_delay_slider(self, value) -> None:
+        self._master.create_command()
 
     def update_color_display(self) -> None:
         self._color_display.configure(
@@ -170,5 +172,5 @@ class AnimationDisplay(ctk.CTkFrame):
         return self._brightness_slider.get()
 
     @property
-    def animation_speed_slider_value(self) -> float:
-        return self._animation_speed_slider.get()
+    def animation_delay_slider_value(self) -> float:
+        return int(round(self._animation_delay_slider.get()))
