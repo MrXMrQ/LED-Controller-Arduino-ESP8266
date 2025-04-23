@@ -1,9 +1,9 @@
 import customtkinter as ctk
 
 from ArduinoBackend.arduino import Arduino
+from ArduinoBackend.arduinoManager import ArduinoManager
 from GUI.CSButton.cs_button import CSButton
 from GUI.Menus.options_menu import OptionsMenu
-from GUI.window import ArduinoManager
 
 
 class BotMenuBar(ctk.CTkFrame):
@@ -52,10 +52,9 @@ class BotMenuBar(ctk.CTkFrame):
 
         if not self._options_menu.get() in self._options_menu.device_map:
             print("No Arduino Selected")
+            return
 
         arduino: Arduino = self._options_menu.device_map[self._options_menu.get()]
-
-        print("POST")
 
         url: str = (
             f"http://{arduino.ip_address}/{self._master.top_menu_bar.active_tab.command}"
@@ -64,6 +63,13 @@ class BotMenuBar(ctk.CTkFrame):
         if url.replace(f"http://{arduino.ip_address}/", "") == "":
             print(self._last_command)
             return
+
+        if hasattr(
+            self._master.top_menu_bar.active_tab, "_save_arduino_single_led_setting"
+        ):
+            self._master.top_menu_bar.active_tab._save_arduino_single_led_setting(
+                url.replace(f"http://{arduino.ip_address}/", ""), arduino
+            )
 
         print(url)
         self._last_command = url

@@ -6,7 +6,7 @@ from GUI.ColorTab.color_tab import ColorTab
 from GUI.AnimationTab.animation_tab import AnimationTab
 from GUI.DeviceTab.device_tab import DeviceTab, OptionsMenu
 from GUI.SingleLEDControllTab.single_led_controll_tab import SingleLEDControllTab
-from GUI.window import ArduinoManager
+from ArduinoBackend.arduinoManager import ArduinoManager
 
 
 class TopMenuBar(ctk.CTkFrame):

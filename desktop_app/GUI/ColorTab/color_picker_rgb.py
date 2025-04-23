@@ -287,7 +287,7 @@ class ColorPickerRGB(ctk.CTkFrame):
 
     def _update_single_led(self, rgb: tuple[int, int, int]) -> None:
         if hasattr(self._master, "_single_led_display"):
-            self._master.change_led_color(self.convert_rgb_to_hex(rgb=rgb))
+            self._master.change_single_led_color(self.convert_rgb_to_hex(rgb=rgb))
 
     def update_command(self, rgb: tuple[int, int, int]) -> None:
         self._master.command = f"ledOn?r={rgb[0]}&g={rgb[1]}&b={rgb[2]}"

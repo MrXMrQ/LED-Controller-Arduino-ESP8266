@@ -152,7 +152,6 @@ class AnimationDisplay(ctk.CTkFrame):
         self._master.create_command()
 
     def _update_animation_delay_slider(self, value) -> None:
-        # self._animation_delay = self._animation_delay_slider.get()
         self._master.create_command()
 
     def update_color_display(self) -> None:

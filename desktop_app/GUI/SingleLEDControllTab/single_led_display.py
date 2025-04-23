@@ -1,6 +1,7 @@
 import requests
 import customtkinter as ctk
 
+from ArduinoBackend import arduino
 from ArduinoBackend.arduino import Arduino
 from GUI.ColorTab.color_picker_rgb import ColorPickerRGB
 from GUI.Menus.options_menu import OptionsMenu
@@ -20,9 +21,11 @@ class SingleLEDDisplay(ctk.CTkFrame):
     ) -> None:
         super().__init__(master, fg_color="gray20", *args, **kwargs)
         self.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+        self._master = master
         self._options_menu = options_menu
         self._color_picker_rgb = color_picker_rgb
         self._elements_per_row = 7
+        self._led_dict = {}
 
         self._canvas = ctk.CTkCanvas(
             self, highlightthickness=0, bg=self.cget("fg_color")
@@ -89,7 +92,9 @@ class SingleLEDDisplay(ctk.CTkFrame):
                 fg_color="black",
                 border_width=4,
             )
-            led.bind("<Button-1>", lambda event, led=led: self._on_click_led(led))
+            led.bind(
+                "<Button-1>", lambda event, led=led, key=i: self._on_click_led(led, key)
+            )
             led.bind("<MouseWheel>", self._on_mousewheel)
             led.grid(
                 row=row,
@@ -99,14 +104,31 @@ class SingleLEDDisplay(ctk.CTkFrame):
             )
             self._LEDS.append(led)
 
-        self._led = self._LEDS[0]
+        self._load_last_state()
 
-    def _on_click_led(self, led: ctk.CTkFrame) -> None:
+        self._led = self._LEDS[0]
+        self._key = 0
+
+    def _load_last_state(self) -> None:
+        if not self._options_menu.get() in self._options_menu.device_map:
+            return
+
+        arduino: Arduino = self._options_menu.device_map[self._options_menu.get()]
+
+        self._led_dict = {item[0]: item[1:] for item in arduino.single_led}
+
+        for key, value in self._led_dict.items():
+            self._LEDS[key] = self._LEDS[key].configure(
+                True, fg_color=self._color_picker_rgb.convert_rgb_to_hex(value)
+            )
+
+    def _on_click_led(self, led: ctk.CTkFrame, key: int) -> None:
         if self._led is not None:
             self._led.configure(True, border_color="black")
 
         led.configure(True, border_color="gray25")
         self._led = led
+        self._key = key
         self._color_picker_rgb.update_rgb_from_hex(
             "#000000" if self._led._fg_color == "black" else self._led._fg_color
         )
@@ -132,9 +154,14 @@ class SingleLEDDisplay(ctk.CTkFrame):
             print(f"Connection failure: {e}")
             return 0
 
-    def update_led_color(self, value) -> None:
-        pass
+    def update_dict(self, led: ctk.CTkFrame, key: int) -> None:
+        self._led_dict[key] = self._color_picker_rgb.rgb
+        self._master.update_command(self._led_dict)
 
     @property
     def led(self) -> ctk.CTkFrame:
         return self._led
+
+    @property
+    def key(self) -> ctk.CTkFrame:
+        return self._key

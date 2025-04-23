@@ -271,3 +271,7 @@ class ArduinoManager:
             List of Arduino objects
         """
         return self._devices.copy()
+
+    @devices.setter
+    def devices(self, value) -> None:
+        self._devices = value
