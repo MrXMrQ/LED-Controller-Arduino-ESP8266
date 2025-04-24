@@ -1,3 +1,4 @@
+import requests
 import customtkinter as ctk
 
 from ArduinoBackend.arduino import Arduino
@@ -24,44 +25,59 @@ class BotMenuBar(ctk.CTkFrame):
         self._options_menu = OptionsMenu(self, ArduinoManager())
         self._options_menu.grid(row=0, column=0, pady=5, padx=10, sticky="ew")
         self._master = master
-        self._last_command = ""
 
         led_on_btn = CSButton(
             self, "🔆", command=self._led_on, font=("Segoe UI Emoji", 30)
         )
-        led_on_btn.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+        led_on_btn.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
 
         led_off_btn = CSButton(
             self, "🔅", command=self._led_off, font=("Segoe UI Emoji", 30)
         )
-        led_off_btn.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+        led_off_btn.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
         post_button_btn = CSButton(self, "Post", command=self._post)
         post_button_btn.grid(row=0, column=3, padx=10, pady=10, sticky="ew")
 
-    def _led_on(self) -> None:
-        print("LED on")
-
-    def _led_off(self) -> None:
-        print("led off")
-
-    def _post(self) -> None:
-        if not hasattr(self._master.top_menu_bar.active_tab, "command"):
-            print(self._last_command)
-            return
-
+    def _get_arduino(self) -> Arduino:
         if not self._options_menu.get() in self._options_menu.device_map:
             print("No Arduino Selected")
+            return None
+
+        return self._options_menu.device_map[self._options_menu.get()]
+
+    def _led_on(self) -> None:
+        arduino = self._get_arduino()
+
+        if arduino is None:
             return
 
-        arduino: Arduino = self._options_menu.device_map[self._options_menu.get()]
+        self._request(f"http://{arduino.ip_address}/{arduino.last_command}")
+
+    def _led_off(self) -> None:
+        arduino = self._get_arduino()
+
+        if arduino is None:
+            return
+
+        self._request(f"http://{arduino.ip_address}/ledOff")
+
+    def _post(self) -> None:
+        arduino = self._get_arduino()
+
+        if arduino is None:
+            return
+
+        if not hasattr(self._master.top_menu_bar.active_tab, "command"):
+            self._request(f"http://{arduino.ip_address}/{arduino.last_command}")
+            return
 
         url: str = (
             f"http://{arduino.ip_address}/{self._master.top_menu_bar.active_tab.command}"
         )
 
         if url.replace(f"http://{arduino.ip_address}/", "") == "":
-            print(self._last_command)
+            self._request(f"http://{arduino.ip_address}/{arduino.last_command}")
             return
 
         if hasattr(
@@ -71,8 +87,32 @@ class BotMenuBar(ctk.CTkFrame):
                 url.replace(f"http://{arduino.ip_address}/", ""), arduino
             )
 
+        self._save_last_command(arduino, url)
+        self._request(url)
+
+    def _save_last_command(self, arduino: Arduino, new_command) -> None:
+        if not self._options_menu.get() in self._options_menu.device_map:
+            return
+
+        arduino.last_command = new_command.replace(f"http://{arduino.ip_address}/", "")
+
+        self._options_menu.manager.devices = [
+            arduino if i == arduino else i for i in self._options_menu.manager.devices
+        ]
+        self._options_menu.manager._save_to_file(self._options_menu.manager.devices)
+
+    def _request(self, url: str) -> None:
         print(url)
-        self._last_command = url
+
+        try:
+            response = requests.post(url)
+
+            if response.status_code in (200, 201, 202, 203, 204):
+                return
+
+            print(f"FAIL: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"connection failure: {e}")
 
     @property
     def options_menu(self) -> OptionsMenu:
