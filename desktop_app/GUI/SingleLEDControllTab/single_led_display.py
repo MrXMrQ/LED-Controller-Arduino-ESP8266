@@ -122,6 +122,11 @@ class SingleLEDDisplay(ctk.CTkFrame):
                 True, fg_color=self._color_picker_rgb.convert_rgb_to_hex(value)
             )
 
+        if not self._led_dict:
+            return
+
+        self._master.update_command(self._led_dict)
+
     def _on_click_led(self, led: ctk.CTkFrame, key: int) -> None:
         if self._led is not None:
             self._led.configure(True, border_color="black")
