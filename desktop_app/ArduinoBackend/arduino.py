@@ -16,7 +16,7 @@ class Arduino:
         ip_address: str,
         mac_address: str,
         status: bool,
-        last_command: str = "ledOn?r=255&g=156&b=100",
+        last_command: str = "ledOn?r=50&g=50&b=50",
         single_led: tuple = (),
     ) -> None:
         self._name = name
