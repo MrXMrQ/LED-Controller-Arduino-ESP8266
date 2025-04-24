@@ -1,0 +1,44 @@
+[
+    {
+        "name": "Arduino 1",
+        "ip_address": "192.168.2.104",
+        "mac_address": "7C:87:CE:B6:51:FC",
+        "status": true,
+        "last_command": "rainbow?r=45&g=0&b=17&delay=49",
+        "single_led": [
+            [
+                1,
+                255,
+                0,
+                0
+            ],
+            [
+                46,
+                0,
+                0,
+                255
+            ],
+            [
+                15,
+                0,
+                0,
+                255
+            ]
+        ]
+    },
+    {
+        "name": "Arduino",
+        "ip_address": "192.168.2.111",
+        "mac_address": "D8:BF:C0:05:77:42",
+        "status": true,
+        "last_command": "singleLED?singleLED=((1, 0, 255, 0),)",
+        "single_led": [
+            [
+                1,
+                0,
+                255,
+                0
+            ]
+        ]
+    }
+]

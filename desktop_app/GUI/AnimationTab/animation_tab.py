@@ -87,7 +87,7 @@ class AnimationTab(ctk.CTkFrame):
         self._led_display.start_animation(animation_function=animation)
 
     def _pulsing_light(self) -> None:
-        self._animation = "pulsing_light"
+        self._animation = "pulse"
         self.create_command()
 
         base_r, base_g, base_b = self._color_tab.color_picker_rgb.rgb
@@ -145,7 +145,7 @@ class AnimationTab(ctk.CTkFrame):
         self._led_display.start_animation(animation)
 
     def _chaising_light(self) -> None:
-        self._animation = "chaising_light"
+        self._animation = "chasing"
         self.create_command()
         index = 0
 
@@ -172,7 +172,7 @@ class AnimationTab(ctk.CTkFrame):
         self._led_display.start_animation(animation)
 
     def _strobe(self) -> None:
-        self._animation = "stobe"
+        self._animation = "strobe"
         self.create_command()
         colors = [
             self._convert_rgb_to_hex(self._color_tab.color_picker_rgb.rgb),
