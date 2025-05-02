@@ -6,7 +6,6 @@ from GUI.ColorTab.color_tab import ColorTab
 from GUI.AnimationTab.animation_tab import AnimationTab
 from GUI.DeviceTab.device_tab import DeviceTab, OptionsMenu
 from GUI.SingleLEDControllTab.single_led_controll_tab import SingleLEDControllTab
-from ArduinoBackend.arduinoManager import ArduinoManager
 
 
 class TopMenuBar(ctk.CTkFrame):
@@ -33,7 +32,7 @@ class TopMenuBar(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
-        self._device_tab = DeviceTab(self._tab, self._options_menu)
+        self._device_tab = DeviceTab(self._tab, self._options_menu, self)
         self._color_tab = ColorTab(self._tab, self)
         self._animation_tab = AnimationTab(self._tab, self._color_tab, self)
         self._single_led_controll_tab = SingleLEDControllTab(
@@ -69,9 +68,8 @@ class TopMenuBar(ctk.CTkFrame):
             tab.create_command()
 
         if isinstance(tab, DeviceTab):
-            self._options_menu.manager = ArduinoManager()
-            tab.add_content()
-            self._options_menu.update_options()
+            tab.update_with_load()
+            pass
 
         if isinstance(tab, SingleLEDControllTab):
             tab.single_led_display.draw_leds()
@@ -86,3 +84,11 @@ class TopMenuBar(ctk.CTkFrame):
     @property
     def active_tab(self) -> str:
         return self._active_tab
+
+    @property
+    def options_menu(self) -> OptionsMenu:
+        return self._options_menu
+
+    def set_options_menu_manager(self, value) -> None:
+        self._options_menu.manager = value
+        self._device_tab.options_menu_manager = value

@@ -29,7 +29,7 @@ class Arduino:
         Arduino.count += 1
 
     def __str__(self) -> str:
-        return f"{self._name}, {self._single_led}"
+        return f"{self._name}, {self._single_led}, {self.mac_address}, {self.status}"
 
     def __eq__(self, value) -> bool:
         if not isinstance(value, Arduino):

@@ -4,25 +4,36 @@ from GUI.CSButton.cs_button import CSButton
 from GUI.DeviceTab.popup import PopUp
 from GUI.Menus.bot_menu_bar import OptionsMenu
 from ArduinoBackend.arduino import Arduino
+from GUI.DeviceTab.loading_bar import LoadingFrame
 
 
 class DeviceTab(ctk.CTkFrame):
     _PADX = 10
     _PADY = 10
 
-    def __init__(self, master, options_menu: OptionsMenu, *args, **kwargs) -> None:
+    def __init__(
+        self, master, options_menu: OptionsMenu, top_menu_bar, *args, **kwargs
+    ) -> None:
         super().__init__(
             master=master, fg_color="gray20", border_color="black", border_width=4
         )
 
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_columnconfigure(0, weight=1)
+
+        self._master = master
+        self._canvas_frame = ctk.CTkFrame(self)
+        self._loading_frame = LoadingFrame(self, top_menu_bar)
+
         self._options_menu = options_menu
 
         self._canvas = ctk.CTkCanvas(
-            self, highlightthickness=0, bg=self.cget("fg_color")
+            self._canvas_frame, highlightthickness=0, bg=self.cget("fg_color")
         )
 
         self._scrollbar = ctk.CTkScrollbar(
-            self, orientation="vertical", command=self._canvas.yview
+            self._canvas_frame, orientation="vertical", command=self._canvas.yview
         )
         self._scrollbar.pack(side="left", fill="y")
 
@@ -44,6 +55,14 @@ class DeviceTab(ctk.CTkFrame):
         self._content_frame.bind("<MouseWheel>", self._on_mousewheel)
         self.bind("<MouseWheel>", self._on_mousewheel)
         self._content_frame.bind("<Configure>", self._on_frame_configure)
+
+        self._scan_button = CSButton(self, "scan", self.update_with_load)
+        self._scan_button.grid(row=1, sticky="ew", padx=10, pady=10)
+
+    def update_with_load(self) -> None:
+        self._canvas_frame.grid_forget()
+        self._loading_frame.grid(row=0, sticky="nsew", padx=10, pady=10)
+        self._loading_frame.start_process()
 
     def add_content(self) -> None:
         for widget in self._content_frame.winfo_children():
@@ -187,3 +206,14 @@ class DeviceTab(ctk.CTkFrame):
 
     def _edit_name(self, arduino: Arduino, label: ctk.CTkLabel) -> None:
         PopUp(self._options_menu, arduino, label)
+
+    def grid_canvas_frame(self):
+        self._canvas_frame.grid(row=0, sticky="nsew", padx=10, pady=10)
+
+    @property
+    def options_menu_manager(self) -> OptionsMenu:
+        return self._options_menu.manager
+
+    @options_menu_manager.setter
+    def options_menu_manager(self, value) -> None:
+        self._options_menu.manager = value
