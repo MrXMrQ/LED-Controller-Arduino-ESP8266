@@ -1,0 +1,10 @@
+[
+    {
+        "name": "Arduino",
+        "ip_address": "192.168.2.116",
+        "mac_address": "7C:87:CE:B6:51:FC",
+        "status": true,
+        "last_command": "ledOn?r=50&g=50&b=50",
+        "single_led": []
+    }
+]

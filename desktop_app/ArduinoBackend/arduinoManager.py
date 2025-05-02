@@ -22,12 +22,15 @@ class ArduinoManager:
         self._filename = filename
         self._devices: List[Arduino] = []
         self._ip_scanner = IPScanner()
+        print(self._ip_scanner.get_devices())
 
         # Load existing data or scan for new devices
         if os.path.exists(filename):
             self._load_from_file()
         else:
             scanned_devices = self._ip_scanner.get_devices()
+            for i in scanned_devices:
+                print(i)
             self._save_to_file(scanned_devices)
 
     def _load_from_file(self) -> None:
@@ -41,6 +44,7 @@ class ArduinoManager:
             if loaded_devices:
                 # Update IP addresses based on MAC addresses
                 scanned_devices = self._ip_scanner.get_devices()
+                print(f"Scanned devices: {scanned_devices}")
                 self._update_device_information(loaded_devices, scanned_devices)
             else:
                 self._save_to_file(self._ip_scanner.get_devices())
