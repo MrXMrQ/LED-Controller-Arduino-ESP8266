@@ -2,7 +2,8 @@ import requests
 import customtkinter as ctk
 
 from ArduinoBackend.arduino import Arduino
-from ArduinoBackend.arduinoManager import ArduinoManager
+from ArduinoBackend.arduino_manager import ArduinoManager
+
 from GUI.CSButton.cs_button import CSButton
 from GUI.Menus.options_menu import OptionsMenu
 
@@ -96,10 +97,9 @@ class BotMenuBar(ctk.CTkFrame):
 
         arduino.last_command = new_command.replace(f"http://{arduino.ip_address}/", "")
 
-        self._options_menu.manager.devices = [
-            arduino if i == arduino else i for i in self._options_menu.manager.devices
-        ]
-        self._options_menu.manager._save_to_file(self._options_menu.manager.devices)
+        self._options_menu.arduino_manager.update_arduino(
+            arduino, arduino.last_command, "last_command"
+        )
 
     def _request(self, url: str) -> None:
         print(url)

@@ -10,12 +10,9 @@ class AnimationTab(ctk.CTkFrame):
     _PADX = 10
     _PADY = 10
 
-    def __init__(
-        self, master, color_tab: ColorTab, top_menu_bar, *args, **kwargs
-    ) -> None:
+    def __init__(self, master, color_tab: ColorTab, *args, **kwargs) -> None:
         super().__init__(master=master, *args, **kwargs)
         self._color_tab = color_tab
-        self._top_menu_bar = top_menu_bar
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure((0, 1), weight=1)
