@@ -3,7 +3,6 @@ import customtkinter as ctk
 
 from ArduinoBackend.arduino import Arduino
 from GUI.ColorTab.color_picker_rgb import ColorPickerRGB
-from GUI.Menus.options_menu import OptionsMenu
 from GUI.SingleLEDControllTab.single_led_display import SingleLEDDisplay
 
 
@@ -11,7 +10,7 @@ class SingleLEDControllTab(ctk.CTkFrame):
     _PADX = 10
     _PADY = 10
 
-    def __init__(self, master, options_menu: OptionsMenu, *args, **kwargs) -> None:
+    def __init__(self, master, top_menu_bar, *args, **kwargs) -> None:
         super().__init__(master, *args, **kwargs)
 
         self.grid_rowconfigure(0, weight=1)
@@ -27,7 +26,7 @@ class SingleLEDControllTab(ctk.CTkFrame):
             pady=SingleLEDControllTab._PADY,
         )
 
-        self._options_menu = options_menu
+        self._options_menu = top_menu_bar.options_menu
 
         self._single_led_display = SingleLEDDisplay(
             self, self._options_menu, self._color_picker_rgb
@@ -74,7 +73,6 @@ class SingleLEDControllTab(ctk.CTkFrame):
 
         arduino.single_led = ast.literal_eval(value.replace("singleLED?singleLED=", ""))
 
-        self._options_menu.manager.devices = [
-            arduino if i == arduino else i for i in self._options_menu.manager.devices
-        ]
-        self._options_menu.manager._save_to_file(self._options_menu.manager.devices)
+        self._options_menu.arduino_manager.update_arduino(
+            arduino, arduino.single_led, "single_led"
+        )

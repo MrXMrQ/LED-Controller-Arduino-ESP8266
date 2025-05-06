@@ -22,7 +22,7 @@ class PopUp(ctk.CTkToplevel):
         self.grab_set()
 
         self._options_menu = options_menu
-        self._manager = self._options_menu.manager
+        self._manager = self._options_menu.arduino_manager
         self._arduino = arduino
         self._label = label
 
@@ -48,11 +48,8 @@ class PopUp(ctk.CTkToplevel):
         if user_input:
             self.destroy()
 
-            for i in self._manager.devices:
-                if i == self._arduino:
-                    i.name = user_input
+            self._manager.update_arduino(self._arduino, user_input, "name")
 
-            self._manager._save_to_file(self._manager.devices)
             self._label.configure(text=user_input)
 
             options_list = list(self._options_menu._build_device_map().keys())

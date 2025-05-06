@@ -1,15 +1,9 @@
-import ast
 import platform
 import subprocess
-from typing import Dict, Any, Union
-
-# Import requests properly
 import requests
 
 
 class Arduino:
-    count = 0
-
     def __init__(
         self,
         name: str,
@@ -26,10 +20,8 @@ class Arduino:
         self._last_command = last_command
         self._single_led = single_led
 
-        Arduino.count += 1
-
     def __str__(self) -> str:
-        return f"{self._name}, {self._single_led}, {self.mac_address}, {self.status}"
+        return f"{self._name}, {self._ip_address}, {self._mac_address}, {self._online}"
 
     def __eq__(self, value) -> bool:
         if not isinstance(value, Arduino):
@@ -40,7 +32,7 @@ class Arduino:
 
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self._mac_address)
 
     def __call__(self) -> bool:
@@ -70,7 +62,7 @@ class Arduino:
 
         return self.mac_address[-6:].upper()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str]:
         status = self()
         return {
             "name": self._name,
@@ -104,6 +96,10 @@ class Arduino:
     @property
     def status(self) -> bool:
         return self._online
+
+    @status.setter
+    def status(self, value) -> None:
+        self._online = value
 
     @property
     def last_command(self) -> str:

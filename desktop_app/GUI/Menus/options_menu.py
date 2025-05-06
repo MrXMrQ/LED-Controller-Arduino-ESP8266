@@ -1,14 +1,14 @@
 from cgitb import text
 import customtkinter as ctk
 
-from ArduinoBackend.arduinoManager import ArduinoManager
+from ArduinoBackend.arduino_manager import ArduinoManager
 
 
 class OptionsMenu(ctk.CTkOptionMenu):
     def __init__(
         self,
         master,
-        manager: ArduinoManager,
+        arduino_manager: ArduinoManager,
         fg_color="gray25",
         button_color="gray25",
         button_hover_color="gray26",
@@ -21,7 +21,7 @@ class OptionsMenu(ctk.CTkOptionMenu):
         *args,
         **kwargs,
     ) -> None:
-        self._arduino_manger = manager
+        self._arduino_manger = arduino_manager
         self._device_map = self._build_device_map()
         _options = list(self._device_map.keys())
         _default_value = _options[0] if _options else "No devices"
@@ -48,8 +48,8 @@ class OptionsMenu(ctk.CTkOptionMenu):
         device_map = {}
         name_counts = {}
 
-        for device in self._arduino_manger.devices:
-            if device():
+        for device in self._arduino_manger.data:
+            if device.status:
                 name = device.name
 
                 if name in device_map:
@@ -86,9 +86,5 @@ class OptionsMenu(ctk.CTkOptionMenu):
         return self._device_map
 
     @property
-    def manager(self) -> ArduinoManager:
+    def arduino_manager(self) -> ArduinoManager:
         return self._arduino_manger
-
-    @manager.setter
-    def manager(self, value: ArduinoManager) -> None:
-        self._arduino_manger = value

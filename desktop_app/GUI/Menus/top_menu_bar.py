@@ -4,7 +4,8 @@ from GUI.CSButton.cs_button import CSButton
 
 from GUI.ColorTab.color_tab import ColorTab
 from GUI.AnimationTab.animation_tab import AnimationTab
-from GUI.DeviceTab.device_tab import DeviceTab, OptionsMenu
+from GUI.DeviceTab.device_tab import DeviceTab
+from GUI.DeviceTab.popup import OptionsMenu
 from GUI.SingleLEDControllTab.single_led_controll_tab import SingleLEDControllTab
 
 
@@ -32,11 +33,11 @@ class TopMenuBar(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
-        self._device_tab = DeviceTab(self._tab, self._options_menu, self)
-        self._color_tab = ColorTab(self._tab, self)
-        self._animation_tab = AnimationTab(self._tab, self._color_tab, self)
+        self._device_tab = DeviceTab(master=self._tab, top_menu_bar=self)
+        self._color_tab = ColorTab(master=self._tab)
+        self._animation_tab = AnimationTab(master=self._tab, color_tab=self._color_tab)
         self._single_led_controll_tab = SingleLEDControllTab(
-            self._tab, self._options_menu
+            master=self._tab, top_menu_bar=self
         )
 
         button_data = [
@@ -69,7 +70,6 @@ class TopMenuBar(ctk.CTkFrame):
 
         if isinstance(tab, DeviceTab):
             tab.update_with_load()
-            pass
 
         if isinstance(tab, SingleLEDControllTab):
             tab.single_led_display.draw_leds()
@@ -88,7 +88,3 @@ class TopMenuBar(ctk.CTkFrame):
     @property
     def options_menu(self) -> OptionsMenu:
         return self._options_menu
-
-    def set_options_menu_manager(self, value) -> None:
-        self._options_menu.manager = value
-        self._device_tab.options_menu_manager = value

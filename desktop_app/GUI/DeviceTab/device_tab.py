@@ -1,19 +1,17 @@
 import customtkinter as ctk
 
+from ArduinoBackend.arduino_manager import ArduinoManager
 from GUI.CSButton.cs_button import CSButton
 from GUI.DeviceTab.popup import PopUp
-from GUI.Menus.bot_menu_bar import OptionsMenu
 from ArduinoBackend.arduino import Arduino
-from GUI.DeviceTab.loading_bar import LoadingFrame
+from GUI.DeviceTab.loading_frame import LoadingFrame
 
 
 class DeviceTab(ctk.CTkFrame):
     _PADX = 10
     _PADY = 10
 
-    def __init__(
-        self, master, options_menu: OptionsMenu, top_menu_bar, *args, **kwargs
-    ) -> None:
+    def __init__(self, master, top_menu_bar, *args, **kwargs) -> None:
         super().__init__(
             master=master, fg_color="gray20", border_color="black", border_width=4
         )
@@ -24,9 +22,9 @@ class DeviceTab(ctk.CTkFrame):
 
         self._master = master
         self._canvas_frame = ctk.CTkFrame(self)
-        self._loading_frame = LoadingFrame(self, top_menu_bar)
-
-        self._options_menu = options_menu
+        self._top_menu_bar = top_menu_bar
+        self._options_menu = top_menu_bar.options_menu
+        self._loading_frame = LoadingFrame(master=self)
 
         self._canvas = ctk.CTkCanvas(
             self._canvas_frame, highlightthickness=0, bg=self.cget("fg_color")
@@ -69,7 +67,7 @@ class DeviceTab(ctk.CTkFrame):
             if widget.winfo_exists():
                 widget.destroy()
 
-        for arduino in self._options_menu.manager.devices:
+        for arduino in self._options_menu.arduino_manager.data:
             arduino_dict = arduino.to_dict()
 
             arduino_frame = ctk.CTkFrame(
@@ -207,13 +205,13 @@ class DeviceTab(ctk.CTkFrame):
     def _edit_name(self, arduino: Arduino, label: ctk.CTkLabel) -> None:
         PopUp(self._options_menu, arduino, label)
 
-    def grid_canvas_frame(self):
+    def grid_canvas_frame(self) -> None:
         self._canvas_frame.grid(row=0, sticky="nsew", padx=10, pady=10)
 
     @property
-    def options_menu_manager(self) -> OptionsMenu:
-        return self._options_menu.manager
+    def top_menu_bar(self):
+        return self._top_menu_bar
 
-    @options_menu_manager.setter
-    def options_menu_manager(self, value) -> None:
-        self._options_menu.manager = value
+    @property
+    def arduino_manager(self) -> ArduinoManager:
+        return self._options_menu.arduino_manager

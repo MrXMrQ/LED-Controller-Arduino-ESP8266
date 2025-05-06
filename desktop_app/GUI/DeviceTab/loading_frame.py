@@ -1,17 +1,25 @@
 import customtkinter as ctk
 import threading
-from ArduinoBackend.arduinoManager import ArduinoManager
+from ArduinoBackend.arduino_manager import ArduinoManager
 
 
 class LoadingFrame(ctk.CTkFrame):
     _PADX = 10
     _PADY = 10
 
-    def __init__(self, master, top_menu_bar, *args, **kwargs) -> None:
+    def __init__(
+        self,
+        master,
+        *args,
+        **kwargs,
+    ) -> None:
         super().__init__(
             master=master, fg_color="gray20", border_color="black", border_width=4
         )
 
+        self._master = master
+        self._top_menu_bar = self._master.top_menu_bar
+        self._arduino_manager = self._master.arduino_manager
         self._content_frame = ctk.CTkFrame(self)
         self._content_frame.grid_rowconfigure((0, 1), weight=1)
         self._content_frame.grid_columnconfigure(0, weight=1)
@@ -24,9 +32,6 @@ class LoadingFrame(ctk.CTkFrame):
             font=("Inter", 30, "bold"),
         )
         self._headline.grid(row=0, column=0, sticky="nsew")
-
-        self._master = master
-        self._top_menu_bar = top_menu_bar
 
         self.indicator_frame = ctk.CTkFrame(
             self._content_frame,
@@ -80,12 +85,12 @@ class LoadingFrame(ctk.CTkFrame):
 
     def _background_process(self) -> None:
         try:
-            self._manager = ArduinoManager()
-            self._top_menu_bar.set_options_menu_manager(self._manager)
+            self._arduino_manager.load_and_upate_from_file()
+            self._data = self._arduino_manager.data
             self._top_menu_bar.options_menu.update_options()
             self.after(0, self._process_completed)
         except Exception as e:
-            print(f"Fail: {e}")
+            print(f"Fail 1: {e}")
             self._master.after(0, self._process_completed)
 
     def _process_completed(self) -> None:
@@ -96,9 +101,6 @@ class LoadingFrame(ctk.CTkFrame):
             self.animation_id = None
 
         self.grid_forget()
-        for arduino in self._manager.devices:
-            print(arduino)
-
         self._master.add_content()
         self._master.grid_canvas_frame()
 
