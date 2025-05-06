@@ -2,7 +2,6 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <Adafruit_NeoPixel.h>
-#include <EEPROM.h>
 
 /**
  * @file LedStripControl.ino
@@ -29,13 +28,7 @@ struct LEDPixelData {
   uint8_t b;      // Blue component
 };
 
-
 LEDPixelData pixelData[NUM_LEDS];
-
-// EEPROM Configuration
-#define EEPROM_SIZE (64 + (sizeof(LEDPixelData) * NUM_LEDS))  // Space needed to store our configuration
-#define EEPROM_MAGIC 0xAB // Magic number to verify valid EEPROM data
-#define LED_DATA_OFFSET 64 // Offset for storing individual LED data in EEPROM
 
 // Animation Types
 enum AnimationType {
@@ -46,17 +39,6 @@ enum AnimationType {
   STROBE = 3,
   RAINDROP = 4,
   FIREPLACE = 5
-};
-
-struct LEDState {
-  uint8_t magic;         
-  bool isOn;             // LEDs are on or off
-  uint8_t r;             // Red component
-  uint8_t g;             // Green component
-  uint8_t b;             // Blue component
-  unsigned long delayTime; // Animation delay
-  int animationType;     // Current animation
-  bool hasIndividualLEDs; // Flag indicating if individual LEDs are set
 };
 
 ESP8266WebServer server(80);
@@ -70,9 +52,6 @@ uint32_t lastUpdate = 0;
 uint8_t r = 255, g = 0, b = 0;
 unsigned long delayTime = 10;
 bool isOn = false;
-
-// State for default yellow lights on first 5 LEDs
-bool isDefaultState = true;
 
 // Animation-specific variables
 struct {
@@ -103,40 +82,6 @@ bool extractArguments();
 void stopAnimation();
 void setAllLeds(uint32_t color);
 void runAnimation();
-void saveState();
-bool loadState();
-void setDefaultState();
-void saveIndividualLEDs();
-void loadIndividualLEDs();
-
-/**
- * @brief Saves the individual LED data to EEPROM
- */
-void saveIndividualLEDs() {
-  int address = LED_DATA_OFFSET;
-  
-  for (int i = 0; i < NUM_LEDS; i++) {
-    EEPROM.put(address, pixelData[i]);
-    address += sizeof(LEDPixelData);
-  }
-  
-  EEPROM.commit();
-  Serial.println("Individual LED data saved");
-}
-
-/**
- * @brief Loads the individual LED data from EEPROM
- */
-void loadIndividualLEDs() {
-  int address = LED_DATA_OFFSET;
-  
-  for (int i = 0; i < NUM_LEDS; i++) {
-    EEPROM.get(address, pixelData[i]);
-    address += sizeof(LEDPixelData);
-  }
-  
-  Serial.println("Individual LED data loaded");
-}
 
 /**
  * @brief Sets all LEDs to a specified color.
@@ -165,14 +110,12 @@ void ledOn() {
   stopAnimation();
   Serial.println("Turning LEDs on.");
   isOn = true;
-  isDefaultState = false;
   
   for (int i = 0; i < NUM_LEDS; i++) {
     pixelData[i].isSet = false;
   }
   
   setAllLeds(strip.Color(r, g, b));
-  saveState();
   server.send(204);
 }
 
@@ -246,15 +189,12 @@ void singleLED() {
       if (tupleStr.indexOf('(', startPos) == -1) break;
     }
     
-    isDefaultState = false;
     isOn = true;
     currentAnimation = NONE;
     animationRunning = false;
     strip.show();
     
-    saveState();
-    
-    server.send(200, "text/plain", "single LEDs updated and saved");
+    server.send(200, "text/plain", "single LEDs updated");
   } else {
     server.send(400, "text/plain", "Missing parameter: singleLED");
   }
@@ -267,7 +207,6 @@ void ledOff() {
   Serial.println("Turning LEDs off.");
   stopAnimation();
   isOn = false;
-  isDefaultState = false;
   
   for (int i = 0; i < NUM_LEDS; i++) {
     pixelData[i].isSet = false;
@@ -275,31 +214,7 @@ void ledOff() {
   
   strip.clear();
   strip.show();
-  saveState();
   server.send(204);
-}
-
-/**
- * @brief Sets the default state (first 5 LEDs yellow)
- */
-void setDefaultState() {
-  Serial.println("Setting default state (first 5 LEDs yellow)");
-  strip.clear();
-  
-  for (int i = 0; i < NUM_LEDS; i++) {
-    pixelData[i].isSet = false;
-  }
-  
-  // Set first 5 LEDs to yellow
-  for (int i = 0; i < 5; i++) {
-    strip.setPixelColor(i, strip.Color(255, 255, 0)); // Yellow color (R+G)
-  }
-  
-  strip.show();
-  isDefaultState = true;
-  isOn = true;
-  currentAnimation = NONE;
-  animationRunning = false;
 }
 
 /**
@@ -529,86 +444,11 @@ void startAnimation(AnimationType animationType) {
     pixelData[i].isSet = false;
   }
   
-  isDefaultState = false;
   isOn = true;
   currentAnimation = animationType;
   animationRunning = true;
   
-  saveState();
-  
   server.send(200, "text/plain", "Animation started!");
-}
-
-/**
- * @brief Saves the current LED state to EEPROM
- */
-void saveState() {
-  LEDState state;
-  state.magic = EEPROM_MAGIC;
-  state.isOn = isOn;
-  state.r = r;
-  state.g = g;
-  state.b = b;
-  state.delayTime = delayTime;
-  state.animationType = (int)currentAnimation;
-  state.hasIndividualLEDs = !isDefaultState && currentAnimation == NONE && isOn;
-  
-  EEPROM.put(0, state);
-  
-  if (state.hasIndividualLEDs) {
-    saveIndividualLEDs();
-  }
-  
-  EEPROM.commit();
-  Serial.println("State saved to EEPROM");
-}
-
-/**
- * @brief Loads the LED state from EEPROM
- * @return true if valid state was loaded, false otherwise
- */
-bool loadState() {
-  LEDState state;
-  EEPROM.get(0, state);
-  
-  if (state.magic != EEPROM_MAGIC) {
-    Serial.println("No valid state found in EEPROM");
-    return false;
-  }
-  
-  isOn = state.isOn;
-  r = state.r;
-  g = state.g;
-  b = state.b;
-  delayTime = state.delayTime;
-  currentAnimation = (AnimationType)state.animationType;
-  
-  Serial.println("State loaded from EEPROM");
-  Serial.printf("LEDs: %s, R: %d, G: %d, B: %d, Animation: %d\n", 
-                isOn ? "ON" : "OFF", r, g, b, currentAnimation);
-  
-  if (isOn) {
-    if (state.hasIndividualLEDs) {
-      loadIndividualLEDs();
-      
-      strip.clear();
-      for (int i = 0; i < NUM_LEDS; i++) {
-        if (pixelData[i].isSet) {
-          strip.setPixelColor(i, strip.Color(pixelData[i].r, pixelData[i].g, pixelData[i].b));
-        }
-      }
-      strip.show();
-    } else if (currentAnimation != NONE) {
-      animationRunning = true;
-    } else {
-      setAllLeds(strip.Color(r, g, b));
-    }
-  } else {
-    strip.clear();
-    strip.show();
-  }
-  
-  return true;
 }
 
 /**
@@ -626,15 +466,7 @@ void setupWiFi() {
   Serial.println("\nWiFi connected!");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
-}
-
-/**
- * @brief Set up LED strip
- */
-void setupLEDs() {
-  strip.begin();
-  strip.clear();
-  strip.show();
+  Serial.println(WiFi.macAddress());
 }
 
 /**
@@ -648,11 +480,6 @@ void setupServer() {
   server.on("/ledOff", HTTP_POST, ledOff);
   server.on("/mac", HTTP_GET, getMac);
   server.on("/num", HTTP_GET, getLEDs);
-  server.on("/default", HTTP_POST, []() {
-    setDefaultState();
-    saveState();
-    server.send(200, "text/plain", "Reset to default state");
-  });
 
   // Animation endpoints
   server.on("/rainbow", HTTP_POST, []() { 
@@ -681,9 +508,8 @@ void setupServer() {
 
 void setup() {
   Serial.begin(115200);
-  EEPROM.begin(EEPROM_SIZE);
-  
-  setupLEDs();
+  strip.begin();
+
   setupWiFi();
   setupServer();
   
@@ -692,12 +518,6 @@ void setup() {
     pixelData[i].r = 0;
     pixelData[i].g = 0;
     pixelData[i].b = 0;
-  }
-  
-  if (!loadState()) {
-    setDefaultState();
-  } else {
-    isDefaultState = false;
   }
 }
 
