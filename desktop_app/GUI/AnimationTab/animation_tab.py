@@ -74,12 +74,13 @@ class AnimationTab(ctk.CTkFrame):
                 led.configure(fg_color=hex_color)
 
             index = (index + 1) % len(colors)
-            self._led_display.set_animation_task(
-                self.after(
-                    int(self._animation_display.animation_delay_slider_value),
-                    animation,
+            if self._led_display.winfo_exists():
+                self._led_display.set_animation_task(
+                    self.after(
+                        int(self._animation_display.animation_delay_slider_value),
+                        animation,
+                    )
                 )
-            )
 
         self._led_display.start_animation(animation_function=animation)
 
@@ -133,11 +134,13 @@ class AnimationTab(ctk.CTkFrame):
 
             index = (index + 1) % len(color_values)
 
-            self._led_display.set_animation_task(
-                self.after(
-                    int(self._animation_display.animation_delay_slider_value), animation
+            if self._led_display.winfo_exists():
+                self._led_display.set_animation_task(
+                    self.after(
+                        int(self._animation_display.animation_delay_slider_value),
+                        animation,
+                    )
                 )
-            )
 
         self._led_display.start_animation(animation)
 
@@ -160,11 +163,13 @@ class AnimationTab(ctk.CTkFrame):
                 )
 
             index = (index + 1) % len(self._led_display.leds)
-            self._led_display.set_animation_task(
-                self.after(
-                    int(self._animation_display.animation_delay_slider_value), animation
+            if self._led_display.winfo_exists():
+                self._led_display.set_animation_task(
+                    self.after(
+                        int(self._animation_display.animation_delay_slider_value),
+                        animation,
+                    )
                 )
-            )
 
         self._led_display.start_animation(animation)
 
@@ -193,11 +198,13 @@ class AnimationTab(ctk.CTkFrame):
 
             index = 1 - index
 
-            self._led_display.set_animation_task(
-                self.after(
-                    int(self._animation_display.animation_delay_slider_value), animation
+            if self._led_display.winfo_exists():
+                self._led_display.set_animation_task(
+                    self.after(
+                        int(self._animation_display.animation_delay_slider_value),
+                        animation,
+                    )
                 )
-            )
 
         self._led_display.start_animation(animation)
 
@@ -218,15 +225,17 @@ class AnimationTab(ctk.CTkFrame):
                     )
                 )
 
-            self.after(
-                int(self._animation_display.animation_delay_slider_value) + 200,
-                lambda led=led: (
-                    led.configure(fg_color="black") if led.winfo_exists() else None
-                ),
-            )
-            self._led_display.set_animation_task(
-                self.after(random.randint(100, 500), animation)
-            )
+            if self.winfo_exists():
+                self.after(
+                    int(self._animation_display.animation_delay_slider_value) + 200,
+                    lambda led=led: (
+                        led.configure(fg_color="black") if led.winfo_exists() else None
+                    ),
+                )
+            if self._led_display.winfo_exists():
+                self._led_display.set_animation_task(
+                    self.after(random.randint(100, 500), animation)
+                )
 
         self._led_display.start_animation(animation)
 
@@ -235,53 +244,106 @@ class AnimationTab(ctk.CTkFrame):
         self.create_command()
 
         def animate() -> None:
-            if not self._led_display._is_animation_running:
+            if not self._led_display._is_animation_running or not self.winfo_exists():
                 return
 
-            num_active_leds = max(1, int(len(self._led_display.leds) * 0.3))
-            active_leds = random.sample(self._led_display.leds, num_active_leds)
+            try:
+                num_active_leds = max(1, int(len(self._led_display.leds) * 0.3))
 
-            base_color = self._color_tab.color_picker_rgb.rgb
-            base_time = max(1, self._animation_display.animation_delay_slider_value)
-            colors = self._generate_similar_colors(base_color, 8)
+                if not hasattr(self._led_display, "leds") or not self._led_display.leds:
+                    return
 
-            for led in active_leds:
-                if led.winfo_exists() and led.winfo_ismapped():
-                    led.configure(fg_color=random.choice(colors))
+                valid_leds = [
+                    led
+                    for led in self._led_display.leds
+                    if hasattr(led, "winfo_exists")
+                    and led.winfo_exists()
+                    and led.winfo_ismapped()
+                ]
 
-                    base_time = max(
-                        1, self._animation_display.animation_delay_slider_value
-                    )
-                    min_time = max(1, int(base_time * 0.5))
-                    max_time = max(min_time + 1, int(base_time * 1.2))
+                if not valid_leds:
+                    return
 
-                    flicker_time = random.randint(min_time, max_time)
+                active_leds = random.sample(
+                    valid_leds, min(num_active_leds, len(valid_leds))
+                )
 
-                    r, g, b = base_color
-                    dimmed_color = self._convert_rgb_to_hex(
-                        (max(0, r // 3), max(0, g // 3), max(0, b // 3))
-                    )
+                base_color = self._color_tab.color_picker_rgb.rgb
+                base_time = max(1, self._animation_display.animation_delay_slider_value)
+                colors = self._generate_similar_colors(base_color, 8)
 
-                    self.after(
-                        flicker_time,
-                        lambda led=led: (
-                            led.configure(
-                                fg_color=random.choice(
-                                    [
-                                        dimmed_color,
-                                        "black",
-                                    ]
-                                )
-                            )
-                            if led.winfo_exists()
-                            else None
-                        ),
-                    )
+                for led in active_leds:
+                    if (
+                        hasattr(led, "winfo_exists")
+                        and led.winfo_exists()
+                        and led.winfo_ismapped()
+                    ):
+                        led.configure(fg_color=random.choice(colors))
 
-            next_frame_time = random.randint(30, max(31, int(base_time * 0.8)))
-            self._led_display.set_animation_task(self.after(next_frame_time, animate))
+                        base_time = max(
+                            1, self._animation_display.animation_delay_slider_value
+                        )
+                        min_time = max(1, int(base_time * 0.5))
+                        max_time = max(min_time + 1, int(base_time * 1.2))
+
+                        flicker_time = random.randint(min_time, max_time)
+
+                        r, g, b = base_color
+                        dimmed_color = self._convert_rgb_to_hex(
+                            (max(0, r // 3), max(0, g // 3), max(0, b // 3))
+                        )
+
+                        def safe_flicker(target_led=led, color=dimmed_color) -> None:
+                            if (
+                                hasattr(self, "winfo_exists")
+                                and self.winfo_exists()
+                                and hasattr(target_led, "winfo_exists")
+                                and target_led.winfo_exists()
+                            ):
+                                try:
+                                    target_led.configure(
+                                        fg_color=random.choice([color, "black"])
+                                    )
+                                except Exception:
+                                    pass
+
+                        if hasattr(self, "winfo_exists") and self.winfo_exists():
+                            self.after(flicker_time, safe_flicker)
+
+                next_frame_time = random.randint(30, max(31, int(base_time * 0.8)))
+
+                if (
+                    hasattr(self._led_display, "winfo_exists")
+                    and self._led_display.winfo_exists()
+                ):
+                    try:
+                        animation_task = self.after(next_frame_time, animate)
+                        self._led_display.set_animation_task(animation_task)
+                    except Exception:
+                        pass
+
+            except Exception as e:
+                print(f"Animation error: {e}")
+                if hasattr(self._led_display, "_is_animation_running"):
+                    self._led_display._is_animation_running = False
 
         self._led_display.start_animation(animate)
+
+    def cleanup_animations(self) -> None:
+        """Safely clean up any running animations before destroying widgets"""
+        if hasattr(self, "_led_display"):
+            if hasattr(self._led_display, "_is_animation_running"):
+                self._led_display._is_animation_running = False
+
+            if (
+                hasattr(self._led_display, "_animation_task")
+                and self._led_display._animation_task
+            ):
+                try:
+                    self.after_cancel(self._led_display._animation_task)
+                    self._led_display._animation_task = None
+                except Exception:
+                    pass
 
     def _generate_similar_colors(self, base_color: tuple, num_colors: int = 4) -> None:
         """Generate similar colors for effects"""
