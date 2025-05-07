@@ -22,7 +22,7 @@ class OptionsMenu(ctk.CTkOptionMenu):
         **kwargs,
     ) -> None:
         self._arduino_manger = arduino_manager
-        self._device_map = self._build_device_map()
+        self._build_device_map()
         _options = list(self._device_map.keys())
         _default_value = _options[0] if _options else "No devices"
 
@@ -69,6 +69,7 @@ class OptionsMenu(ctk.CTkOptionMenu):
                     device_map[name] = device
                     name_counts[name] = 0
 
+        self._device_map = device_map
         return device_map
 
     def update_options(self) -> None:
