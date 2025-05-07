@@ -166,12 +166,12 @@ class ColorPickerRGB(ctk.CTkFrame):
             progress_color="#C2C0BA",
             button_color="#E0DEDA",
             button_hover_color="#EAE9E6",
-            from_=0,
+            from_=-255,
             to=255,
-            number_of_steps=256,
+            number_of_steps=511,
             command=self._update_color_from_slider,
         )
-        self._brightness_slider.set(255)
+        self._brightness_slider.set(0)
         self._brightness_slider.grid(
             row=4, column=1, padx=ColorPickerRGB._PADX, pady=10
         )
@@ -221,16 +221,26 @@ class ColorPickerRGB(ctk.CTkFrame):
         self.update_command(self._rgb)
 
     def _set_rgb(self) -> None:
-        brightness = self._brightness_slider.get() / 255
-
-        self._rgb = (
-            int(round(self._red_slider.get()) * brightness),
-            int(round(self._green_slider.get()) * brightness),
-            int(round(self._blue_slider.get()) * brightness),
+        self._raw_rgb = (
+            int(round(self._red_slider.get())),
+            int(round(self._green_slider.get())),
+            int(round(self._blue_slider.get())),
         )
 
+        brightness = self._brightness_slider.get()
+
+        if brightness >= 0:
+            brightness_factor = 1 + (brightness / 255)
+            self._rgb = tuple(
+                min(255, int(c * brightness_factor)) for c in self._raw_rgb
+            )
+        else:
+            brightness_factor = 1 + (brightness / 255)
+            self._rgb = tuple(max(0, int(c * brightness_factor)) for c in self._raw_rgb)
+
     def update_from_animation_tab(self, value) -> None:
-        self._brightness_slider.set(value)
+        mapped_value = (value * 2) - 255
+        self._brightness_slider.set(mapped_value)
         self._update_color_from_slider()
 
     def _update_color_display(self, rgb: tuple[int, int, int]) -> None:
@@ -266,9 +276,10 @@ class ColorPickerRGB(ctk.CTkFrame):
         self._update_entry_text(self._rgb)
         self._update_color_picker_hex_entry(self._rgb)
 
-    def update_rgb_from_hex(self, hex_code) -> None:
+    def update_rgb_from_hex(self, hex_code, brightness: int = None) -> None:
         hex_code = hex_code.lstrip("#")
         self._rgb = tuple(int(hex_code[i : i + 2], 16) for i in (0, 2, 4))
+        self._raw_rgb = self._rgb
 
         self._update_color_display(self._rgb)
         self._update_entry_text(self._rgb)
@@ -276,7 +287,13 @@ class ColorPickerRGB(ctk.CTkFrame):
         self._red_slider.set(self._rgb[0])
         self._green_slider.set(self._rgb[1])
         self._blue_slider.set(self._rgb[2])
-        self._brightness_slider.set(255)
+
+        if brightness is not None:
+            mapped_brightness = (brightness * 2) - 255
+            self._brightness_slider.set(mapped_brightness)
+        else:
+            self._brightness_slider.set(0)
+
         self.update_command(self._rgb)
 
     def _update_color_picker_hex_entry(self, rgb: tuple[int, int, int]) -> None:
@@ -287,7 +304,8 @@ class ColorPickerRGB(ctk.CTkFrame):
 
     def _update_single_led(self, rgb: tuple[int, int, int]) -> None:
         if hasattr(self._master, "_single_led_display"):
-            self._master.change_single_led_color(self.convert_rgb_to_hex(rgb=rgb))
+            brightness_value = int(((self._brightness_slider.get() + 255) / 2))
+            self._master.change_single_led_color(rgb, brightness_value)
 
     def update_command(self, rgb: tuple[int, int, int]) -> None:
         self._master.command = f"ledOn?r={rgb[0]}&g={rgb[1]}&b={rgb[2]}"
@@ -298,4 +316,4 @@ class ColorPickerRGB(ctk.CTkFrame):
 
     @property
     def brightness_slider_value(self) -> float:
-        return self._brightness_slider.get()
+        return (self._brightness_slider.get() + 255) / 2
