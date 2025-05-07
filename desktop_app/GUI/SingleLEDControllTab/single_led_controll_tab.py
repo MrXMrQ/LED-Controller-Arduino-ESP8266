@@ -39,11 +39,18 @@ class SingleLEDControllTab(ctk.CTkFrame):
             pady=SingleLEDControllTab._PADY,
         )
 
-    def change_single_led_color(self, value: str) -> None:
+    def change_single_led_color(
+        self, rgb: tuple[int, int, int], brightness: int
+    ) -> None:
         if self._single_led_display.led is None:
             return
 
-        self._single_led_display.led.configure(True, fg_color=value)
+        self._single_led_display.led.rgb = rgb
+        self._single_led_display.led.brightness = brightness
+
+        self._single_led_display.led.configure(
+            True, fg_color=self._color_picker_rgb.convert_rgb_to_hex(rgb)
+        )
         self._single_led_display.update_dict(
             self._single_led_display.led, self._single_led_display.key
         )
@@ -67,12 +74,14 @@ class SingleLEDControllTab(ctk.CTkFrame):
 
         self._command = f"singleLED?singleLED={ziped_list}"
 
-    def _save_arduino_single_led_setting(self, value, arduino: Arduino) -> None:
+    def _save_arduino_single_led_setting(self, arduino: Arduino) -> None:
         if not self._options_menu.get() in self._options_menu.device_map:
             return
 
-        arduino.single_led = ast.literal_eval(value.replace("singleLED?singleLED=", ""))
+        arduino.single_led = ast.literal_eval(
+            self._command.replace("singleLED?singleLED=", "")
+        )
 
         self._options_menu.arduino_manager.update_arduino(
-            arduino, arduino.single_led, "single_led"
+            arduino, arduino.single_led, "_single_led"
         )

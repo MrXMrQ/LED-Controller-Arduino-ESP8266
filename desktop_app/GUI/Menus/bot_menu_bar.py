@@ -85,7 +85,7 @@ class BotMenuBar(ctk.CTkFrame):
             self._master.top_menu_bar.active_tab, "_save_arduino_single_led_setting"
         ):
             self._master.top_menu_bar.active_tab._save_arduino_single_led_setting(
-                url.replace(f"http://{arduino.ip_address}/", ""), arduino
+                arduino
             )
 
         self._save_last_command(arduino, url)

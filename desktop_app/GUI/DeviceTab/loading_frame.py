@@ -20,7 +20,10 @@ class LoadingFrame(ctk.CTkFrame):
         self._master = master
         self._top_menu_bar = self._master.top_menu_bar
         self._arduino_manager = self._master.arduino_manager
-        self._content_frame = ctk.CTkFrame(self)
+        self._content_frame = ctk.CTkFrame(
+            self,
+            fg_color="gray20",
+        )
         self._content_frame.grid_rowconfigure((0, 1), weight=1)
         self._content_frame.grid_columnconfigure(0, weight=1)
 

@@ -5,6 +5,7 @@ from ArduinoBackend import arduino
 from ArduinoBackend.arduino import Arduino
 from GUI.ColorTab.color_picker_rgb import ColorPickerRGB
 from GUI.Menus.options_menu import OptionsMenu
+from GUI.SingleLEDControllTab.led import LED
 
 
 class SingleLEDDisplay(ctk.CTkFrame):
@@ -83,15 +84,7 @@ class SingleLEDDisplay(ctk.CTkFrame):
             if i % self._elements_per_row == 0:
                 row += 1
 
-            led = ctk.CTkFrame(
-                self._content_frame,
-                corner_radius=15,
-                height=50,
-                width=50,
-                border_color="black",
-                fg_color="black",
-                border_width=4,
-            )
+            led = LED(self._content_frame, (0, 0, 0), brightness=255)
             led.bind(
                 "<Button-1>", lambda event, led=led, key=i: self._on_click_led(led, key)
             )
@@ -132,10 +125,11 @@ class SingleLEDDisplay(ctk.CTkFrame):
             self._led.configure(True, border_color="black")
 
         led.configure(True, border_color="gray25")
-        self._led = led
+        self._led: LED = led
         self._key = key
         self._color_picker_rgb.update_rgb_from_hex(
-            "#000000" if self._led._fg_color == "black" else self._led._fg_color
+            "#000000" if self._led._fg_color == "black" else self._led._fg_color,
+            self._led.brightness,
         )
 
     def _request_led_count(self) -> None:
@@ -164,7 +158,7 @@ class SingleLEDDisplay(ctk.CTkFrame):
         self._master.update_command(self._led_dict)
 
     @property
-    def led(self) -> ctk.CTkFrame:
+    def led(self) -> LED:
         return self._led
 
     @property
